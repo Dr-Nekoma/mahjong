@@ -1,0 +1,30 @@
+* Mahjong
+
+The greatest Mahjong game implementation with the blandest name choice ever written using [[https://lfe.io/][LFE]] and [[https://rescript-lang.org/][ReScript]].
+
+
+** Tooling
+
+TODO
+
+- [Installation](../../README.md)
+
+Official ReScript starter template.
+
+## Installation
+
+```sh
+npm install
+```
+
+## Build
+
+- Build: `npm run res:build`
+- Clean: `npm run res:clean`
+- Build & watch: `npm run res:dev`
+
+## Run
+
+```sh
+node src/Demo.res.js
+```
