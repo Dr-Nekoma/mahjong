@@ -1,5 +1,5 @@
 {
-  "name": "whatever",
+  "name": "mahjong",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -19,6 +19,7 @@
     "rescript": "^11.1.4"
   },
   "devDependencies": {
+    "serve": "^14.2.4",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.15",
     "postcss": "^8.4.28",
