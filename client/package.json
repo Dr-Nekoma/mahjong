@@ -19,6 +19,7 @@
     "rescript": "^11.1.4"
   },
   "devDependencies": {
+    "@rescript/language-server": "^1.62.0",
     "serve": "^14.2.4",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.15",
