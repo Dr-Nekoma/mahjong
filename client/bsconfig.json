@@ -1,0 +1,10 @@
+{
+    "sources": {
+	"dir": "src",
+	"subdirs": true
+    },
+    "bs-dependencies": [
+	"@rescript/core",
+	"@rescript/react"
+    ]
+}

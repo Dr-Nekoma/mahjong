@@ -1,21 +1,83 @@
 open WebGL
+
+let vsSource = `
+    attribute vec4 aVertexPosition;
+    uniform mat4 uModelViewMatrix;
+    uniform mat4 uProjectionMatrix;
+    void main() {
+      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+    }
+`;
+
+let fsSource = `
+  void main() {
+    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  }
+`;
+
+let loadShader = (gl: GL.s, typ: GL.constant, src: string): option<GL.Shader.t>  => {
+  open WebGL.GL
+
+  switch Shader.create(gl, typ) {
+    | None => Console.log("Unable to create shader."); None;
+    | Some(shader) =>
+
+      Shader.source(gl, shader, src);
+
+      Shader.compile(gl, shader);
+
+      if (!Shader.getParameter(gl, shader, Shader.compileStatus(gl))) {
+        Console.log("Failed in getParameter function call");
+        Shader.delete(gl, shader);
+        None;
+      } else {
+        Some(shader);
+      }
+  } 
+}
+
+let initShaderProgram = (gl: GL.s, vsSource: string, fsSource: string): option<GL.Program.t> => {
+  open WebGL.GL
+
+  let vertexShaderMay = loadShader(gl, Shader.vertex(gl), vsSource);
+  let fragmentShaderMay = loadShader(gl, Shader.fragment(gl), fsSource);
+
+  switch (vertexShaderMay, fragmentShaderMay) {
+    | (Some(vertexShader), Some(fragmentShader)) => 
+      let shaderProgram = Program.create(gl);
+      attachShader(gl, shaderProgram, vertexShader);
+      attachShader(gl, shaderProgram, fragmentShader);
+      Program.link(gl, shaderProgram);
+
+      if (!Program.getParameter(gl, shaderProgram, Shader.linkStatus(gl))) {
+        Console.log("Failed in getParameter function call");
+        None;
+      } else {
+        Some(shaderProgram);
+      }
+    | _ => 
+      Console.log("Failed creating shaders");
+      None;
+  }
+}
+
 let main = () => {
-  let canvasMay = querySelector("canvas")
+  let canvasMay = DOM.querySelector("canvas")
 
   switch canvasMay {
       | None =>
         Console.log("Unable to initialize the canvas.");
       | Some(canvas) =>
 
-      let glMay = getContext(canvas, "webgl")
+      let glMay = DOM.getContext(canvas, "webgl")
 
       switch glMay {
         | None =>
           Console.log("Unable to initialize WebGL. Your browser or machine may not support it.");
         | Some(gl) =>
           Console.log(gl);
-          clearColor(gl, 0.0, 0.0, 0.0, 1.0);
-          clear(gl, getColorBufferBit(gl));
+          GL.clearColor(gl, 0.0, 0.0, 0.0, 1.0);
+          GL.clear(gl, GL.Buffers.colorBufferBit(gl));
       }
 
   }  

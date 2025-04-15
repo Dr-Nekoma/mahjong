@@ -3,10 +3,49 @@
 import * as WebGL from "./WebGL.res.mjs";
 import * as Caml_option from "rescript/lib/es6/caml_option.js";
 
+function loadShader(gl, typ, src) {
+  var shader = WebGL.GL.Shader.create(gl, typ);
+  if (shader !== undefined) {
+    var shader$1 = Caml_option.valFromOption(shader);
+    gl.shaderSource(shader$1, src);
+    gl.compileShader(shader$1);
+    if (gl.getShaderParameter(shader$1, gl.COMPILE_STATUS)) {
+      return Caml_option.some(shader$1);
+    } else {
+      console.log("Failed in getParameter function call");
+      gl.deleteShader(shader$1);
+      return ;
+    }
+  }
+  console.log("Unable to create shader.");
+}
+
+function initShaderProgram(gl, vsSource, fsSource) {
+  var vertexShaderMay = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+  var fragmentShaderMay = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+  if (vertexShaderMay !== undefined) {
+    if (fragmentShaderMay !== undefined) {
+      var shaderProgram = gl.createProgram();
+      gl.attachShader(shaderProgram, Caml_option.valFromOption(vertexShaderMay));
+      gl.attachShader(shaderProgram, Caml_option.valFromOption(fragmentShaderMay));
+      gl.linkProgram(shaderProgram);
+      if (gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        return Caml_option.some(shaderProgram);
+      } else {
+        console.log("Failed in getParameter function call");
+        return ;
+      }
+    }
+    console.log("Failed creating shaders");
+    return ;
+  }
+  console.log("Failed creating shaders");
+}
+
 function main() {
-  var canvasMay = WebGL.querySelector("canvas");
+  var canvasMay = WebGL.DOM.querySelector("canvas");
   if (canvasMay !== undefined) {
-    var glMay = WebGL.getContext(Caml_option.valFromOption(canvasMay), "webgl");
+    var glMay = WebGL.DOM.getContext(Caml_option.valFromOption(canvasMay), "webgl");
     if (glMay !== undefined) {
       var gl = Caml_option.valFromOption(glMay);
       console.log(gl);
@@ -22,7 +61,15 @@ function main() {
 
 main();
 
+var vsSource = "\n    attribute vec4 aVertexPosition;\n    uniform mat4 uModelViewMatrix;\n    uniform mat4 uProjectionMatrix;\n    void main() {\n      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;\n    }\n";
+
+var fsSource = "\n  void main() {\n    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n  }\n";
+
 export {
+  vsSource ,
+  fsSource ,
+  loadShader ,
+  initShaderProgram ,
   main ,
 }
 /*  Not a pure module */

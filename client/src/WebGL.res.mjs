@@ -2,6 +2,24 @@
 
 import * as Caml_option from "rescript/lib/es6/caml_option.js";
 
+var Buffers = {};
+
+var Program = {};
+
+function create(s, $$const) {
+  return Caml_option.nullable_to_opt(s.createShader($$const));
+}
+
+var Shader = {
+  create: create
+};
+
+var GL = {
+  Buffers: Buffers,
+  Program: Program,
+  Shader: Shader
+};
+
 function querySelector(str) {
   return Caml_option.nullable_to_opt(document.querySelector(str));
 }
@@ -10,8 +28,13 @@ function getContext(elem, str) {
   return Caml_option.nullable_to_opt(elem.getContext(str));
 }
 
+var DOM = {
+  querySelector: querySelector,
+  getContext: getContext
+};
+
 export {
-  querySelector ,
-  getContext ,
+  GL ,
+  DOM ,
 }
 /* No side effect */
