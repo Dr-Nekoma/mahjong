@@ -2,11 +2,10 @@
 default:
     just --list
 
+# Build client
 client:
 	npm run --prefix ./client/ res:build
 
-run:
-	node client/src/main.res.mjs
-
-serve:
+# Serve client
+serve: client
 	nix build && cd result/lib/node_modules/mahjong/ && npx serve dist
