@@ -22,7 +22,7 @@
   flake-utils.lib.eachDefaultSystem (
     system:
     let pkgs = import nixpkgs {inherit system;};
-        developer = builtins.getEnv "USERNAME";
+        developer = builtins.getEnv "USER";
     in {
     # For each system, we define our default package
     # by passing in our desired nixpkgs revision plus
