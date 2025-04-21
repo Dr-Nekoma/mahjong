@@ -78,6 +78,24 @@ let main = () => {
           Console.log(gl);
           GL.clearColor(gl, 0.0, 0.0, 0.0, 1.0);
           GL.clear(gl, GL.Buffers.colorBufferBit(gl));
+
+          switch initShaderProgram(gl, vsSource, fsSource) {
+            | None =>
+              Console.log("Could not init shader program");
+            | Some(shaderProgram) =>
+              open Option
+              let programInfo = {
+                "program": shaderProgram,
+                "attribLocations": {
+                  "vertexPosition": GL.Program.getAttribLocation(gl, shaderProgram, "aVertexPosition"),
+                },
+                "uniformLocations": {
+                  "projectionMatrix": getExn(GL.Program.getUniformLocation(gl, shaderProgram, "uProjectionMatrix")),
+                  "modelViewMatrix": getExn(GL.Program.getUniformLocation(gl, shaderProgram, "uModelViewMatrix")),
+                },
+              };
+          }
+          
       }
 
   }  

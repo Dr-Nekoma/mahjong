@@ -2,23 +2,36 @@
 
 import * as Caml_option from "rescript/lib/es6/caml_option.js";
 
-var Buffers = {};
-
-var Program = {};
+function getUniformLocation(s, t, string) {
+  return Caml_option.nullable_to_opt(s.getUniformLocation(t, string));
+}
 
 function create(s, $$const) {
   return Caml_option.nullable_to_opt(s.createShader($$const));
 }
 
-var Shader = {
-  create: create
-};
+function initPositionBuffer(gl) {
+  var positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  var positions = [
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    -1.0
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+  return positionBuffer;
+}
 
-var GL = {
-  Buffers: Buffers,
-  Program: Program,
-  Shader: Shader
-};
+function initBuffers(gl) {
+  return {
+          position: initPositionBuffer(gl)
+        };
+}
 
 function querySelector(str) {
   return Caml_option.nullable_to_opt(document.querySelector(str));
@@ -31,6 +44,87 @@ function getContext(elem, str) {
 var DOM = {
   querySelector: querySelector,
   getContext: getContext
+};
+
+var GL_Buffers = {
+  colorBufferBit: (function (prim) {
+      return prim.COLOR_BUFFER_BIT;
+    })
+};
+
+var GL_Program = {
+  create: (function (prim) {
+      return prim.createProgram();
+    }),
+  link: (function (prim0, prim1) {
+      prim0.linkProgram(prim1);
+    }),
+  getParameter: (function (prim0, prim1, prim2) {
+      return prim0.getProgramParameter(prim1, prim2);
+    }),
+  getAttribLocation: (function (prim0, prim1, prim2) {
+      return prim0.getAttribLocation(prim1, prim2);
+    }),
+  getUniformLocation: getUniformLocation
+};
+
+var GL_Shader = {
+  vertex: (function (prim) {
+      return prim.VERTEX_SHADER;
+    }),
+  fragment: (function (prim) {
+      return prim.FRAGMENT_SHADER;
+    }),
+  linkStatus: (function (prim) {
+      return prim.LINK_STATUS;
+    }),
+  create: create,
+  source: (function (prim0, prim1, prim2) {
+      prim0.shaderSource(prim1, prim2);
+    }),
+  compile: (function (prim0, prim1) {
+      prim0.compileShader(prim1);
+    }),
+  getParameter: (function (prim0, prim1, prim2) {
+      return prim0.getShaderParameter(prim1, prim2);
+    }),
+  deleteStatus: (function (prim) {
+      return prim.DELETE_STATUS;
+    }),
+  compileStatus: (function (prim) {
+      return prim.COMPILE_STATUS;
+    }),
+  shaderType: (function (prim) {
+      return prim.SHADER_TYPE;
+    }),
+  getInfoLog: (function (prim0, prim1) {
+      return prim0.getShaderInfoLog(prim1);
+    }),
+  $$delete: (function (prim0, prim1) {
+      prim0.deleteShader(prim1);
+    })
+};
+
+function GL_attachShader(prim0, prim1, prim2) {
+  prim0.attachShader(prim1, prim2);
+}
+
+function GL_clearColor(prim0, prim1, prim2, prim3, prim4) {
+  prim0.clearColor(prim1, prim2, prim3, prim4);
+}
+
+function GL_clear(prim0, prim1) {
+  prim0.clear(prim1);
+}
+
+var GL = {
+  Buffers: GL_Buffers,
+  Program: GL_Program,
+  Shader: GL_Shader,
+  attachShader: GL_attachShader,
+  clearColor: GL_clearColor,
+  clear: GL_clear,
+  initBuffers: initBuffers
 };
 
 export {
