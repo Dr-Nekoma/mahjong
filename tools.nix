@@ -7,7 +7,7 @@
             sha256 = "sha256-J3V8SZJZ2LSL8QfdoOtHI1ZDmGDVerTRYP4NZU17SeQ=";
         }
     ];
-    marinho = [
+    silver = [
         {
             name = "dance";
             publisher = "gregoire";
