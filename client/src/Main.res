@@ -90,8 +90,8 @@ let main = () => {
                   "vertexPosition": GL.Program.getAttribLocation(gl, shaderProgram, "aVertexPosition"),
                 },
                 "uniformLocations": {
-                  "projectionMatrix": getUnsafe(GL.Program.getUniformLocation(gl, shaderProgram, "uProjectionMatrix")),
-                  "modelViewMatrix": getUnsafe(GL.Program.getUniformLocation(gl, shaderProgram, "uModelViewMatrix")),
+                  "projectionMatrix": getExn(GL.Program.getUniformLocation(gl, shaderProgram, "uProjectionMatrix")),
+                  "modelViewMatrix": getExn(GL.Program.getUniformLocation(gl, shaderProgram, "uModelViewMatrix")),
                 },
               };
           }
