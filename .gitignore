@@ -1,6 +1,7 @@
 .DS_Store
 client/node_modules/
 client/lib/
+client/dist/
 result
 .direnv/
 *.res.mjs
