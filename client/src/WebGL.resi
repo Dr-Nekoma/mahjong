@@ -2,12 +2,22 @@ module GL: {
     type s
     type constant
     
+    module Canvas: {
+        type t
+        let get : s => t
+        let clientHeight : t => constant
+        let clientWidth : t => constant
+    }
     module Buffers: {
         let colorBufferBit: s => constant
+        let depthBufferBit: s => constant        
     }
-    module Program: {
+    module ProgramInfo: {
         type t
         type webGLUniformLocation
+        type program
+        let program: s => program
+        let useProgram : program => unit
         let create : s => t
         let link : (s, t) => unit
         let getParameter : (s, t, constant) => bool
@@ -29,8 +39,13 @@ module GL: {
         let getInfoLog : (s, t) => string
         let delete : (s, t) => unit
     }
-    let attachShader : (s, Program.t, Shader.t) => unit
+    let attachShader : (s, ProgramInfo.t, Shader.t) => unit
     let clearColor : (s, float, float, float, float) => unit
+    let clearDepth : (s, constant) => unit
+    let depthTest: s => constant
+    let depthFunc : (s, constant) => unit
+    let lequal: s => constant
+    let enable : (s, constant) => unit
     let clear : (s, constant) => unit
 
     type buffer
