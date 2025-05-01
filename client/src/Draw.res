@@ -63,7 +63,7 @@ let drawScene = (gl: GL.s, programInfo: GL.Program.t, buffers: GL.buffer) => {
   setPositionAttribute(gl, buffers, programInfo);
 
   // Tell WebGL to use our program when drawing
-  gl.useProgram(programInfo.program);
+  GL.ProgramInfo.useProgram(gl, GL.ProgramInfo.program(programInfo));
 
   // Set the shader uniforms
   gl.uniformMatrix4fv(
