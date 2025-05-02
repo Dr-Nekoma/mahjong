@@ -11,12 +11,12 @@ module GL = {
         type t
         @get external get : s => t = "canvas"
         @get external clientHeight : t => constant = "clientHeight"
-        @get external clientWidth : t => constant = "clientWidth"        
+        @get external clientWidth : t => constant = "clientWidth"
     }
     module Buffers = {
         @get external colorBufferBit: s => constant = "COLOR_BUFFER_BIT"
         @get external arrayBuffer: s => constant = "ARRAY_BUFFER"
-        @get external depthBufferBit: s => constant = "DEPTH_BUFFER_BIT"        
+        @get external depthBufferBit: s => constant = "DEPTH_BUFFER_BIT"
     }
     module ProgramInfo = {
         type t
@@ -30,7 +30,7 @@ module GL = {
         @send external getAttribLocation : (s, t, string) => int = "getAttribLocation"
         @send external _getUniformLocation : (s, t, string) => Nullable.t<webGLUniformLocation> = "getUniformLocation"
         let getUniformLocation = (s, t, string) => { _getUniformLocation(s, t, string) |> Nullable.toOption }
-        
+
     }
     module Shader = {
         type t
@@ -51,16 +51,16 @@ module GL = {
     @send external attachShader : (s, ProgramInfo.t, Shader.t) => unit = "attachShader"
     @send external clearColor : (s, float, float, float, float) => unit = "clearColor"
     @send external clearDepth : (s, constant) => unit = "clearDepth"
-    @get external depthTest: s => constant = "DEPTH_TEST"    
+    @get external depthTest: s => constant = "DEPTH_TEST"
     @send external depthFunc : (s, constant) => unit = "depthFunc"
-    @get external lequal: s => constant = "LEQUAL"        
-    @send external enable : (s, constant) => unit = "enable"    
+    @get external lequal: s => constant = "LEQUAL"
+    @send external enable : (s, constant) => unit = "enable"
     @send external clear : (s, float) => unit = "clear"
     @send external createBuffer : s => webGLBuffer = "createBuffer"
     @send external bindBuffer : (s, constant, webGLBuffer) => unit = "bindBuffer"
     @send external bufferData : (s, constant, Float32Array.t, constant) => unit = "bufferData"
     @get external staticDraw: s => constant = "STATIC_DRAW"
-    
+
     let initPositionBuffer = (gl: s): webGLBuffer => {
         // Create a buffer for the square's positions.
         let positionBuffer = createBuffer(gl);

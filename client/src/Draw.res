@@ -21,7 +21,7 @@ function setPositionAttribute(gl, buffers, programInfo) {
 
 let drawScene = (gl: GL.s, programInfo: GL.Program.t, buffers: GL.buffer) => {
     GL.clearColor(gl, 0.0, 0.0, 0.0, 1.0);
-  
+
     GL.clearDepth(gl, 1.0); // Clear everything
     GL.enable(gl, GL.depthTest); // Enable depth testing
     GL.depthFunc(gl, GL.lequal); // Near things obscure far things

@@ -33,7 +33,7 @@ let loadShader = (gl: GL.s, typ: GL.constant, src: string): option<GL.Shader.t> 
       } else {
         Some(shader);
       }
-  } 
+  }
 }
 
 let initShaderProgram = (gl: GL.s, vsSource: string, fsSource: string): option<GL.Program.t> => {
@@ -43,7 +43,7 @@ let initShaderProgram = (gl: GL.s, vsSource: string, fsSource: string): option<G
   let fragmentShaderMay = loadShader(gl, Shader.fragment(gl), fsSource);
 
   switch (vertexShaderMay, fragmentShaderMay) {
-    | (Some(vertexShader), Some(fragmentShader)) => 
+    | (Some(vertexShader), Some(fragmentShader)) =>
       let shaderProgram = Program.create(gl);
       attachShader(gl, shaderProgram, vertexShader);
       attachShader(gl, shaderProgram, fragmentShader);
@@ -55,7 +55,7 @@ let initShaderProgram = (gl: GL.s, vsSource: string, fsSource: string): option<G
       } else {
         Some(shaderProgram);
       }
-    | _ => 
+    | _ =>
       Console.log("Failed creating shaders");
       None;
   }

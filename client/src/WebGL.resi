@@ -1,7 +1,7 @@
 module GL: {
     type s
     type constant
-    
+
     module Canvas: {
         type t
         let get : s => t
@@ -10,7 +10,7 @@ module GL: {
     }
     module Buffers: {
         let colorBufferBit: s => constant
-        let depthBufferBit: s => constant        
+        let depthBufferBit: s => constant
     }
     module ProgramInfo: {
         type t
