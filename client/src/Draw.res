@@ -1,25 +1,26 @@
 open WebGL
 
-function setPositionAttribute(gl, buffers, programInfo) {
-  const numComponents = 2; // pull out 2 values per iteration
-  const type = gl.FLOAT; // the data in the buffer is 32bit floats
-  const normalize = false; // don't normalize
-  const stride = 0; // how many bytes to get from one set of values to the next
+let setPositionAttribute = (gl: GL.s, buffers: GL.buffer, programInfo: GL.ProgramInfo.t) => {
+  let numComponents = 2; // pull out 2 values per iteration
+  let glType = GL.float(gl); // the data in the buffer is 32bit floats
+  let normalize = false; // don't normalize
+  let stride = 0; // how many bytes to get from one set of values to the next
   // 0 = use type and numComponents above
-  const offset = 0; // how many bytes inside the buffer to start from
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-  gl.vertexAttribPointer(
+  let offset = 0; // how many bytes inside the buffer to start from
+  GL.bindBuffer(gl, GL.Buffers.arrayBuffer(gl), buffers.position);
+  GL.vertexAttribPointer(
+    gl,
     programInfo.attribLocations.vertexPosition,
     numComponents,
-    type,
+    glType,
     normalize,
     stride,
     offset,
   );
-  gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+  GL.enableVertexAttribArray(gl, programInfo.attribLocations.vertexPosition);
 }
 
-let drawScene = (gl: GL.s, programInfo: GL.Program.t, buffers: GL.buffer) => {
+let drawScene = (gl: GL.s, programInfo: GL.ProgramInfo.t, buffers: GL.buffer) => {
     GL.clearColor(gl, 0.0, 0.0, 0.0, 1.0);
 
     GL.clearDepth(gl, 1.0); // Clear everything
@@ -78,9 +79,9 @@ let drawScene = (gl: GL.s, programInfo: GL.Program.t, buffers: GL.buffer) => {
   );
 
   {
-    const offset = 0;
-    const vertexCount = 4;
-    gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+    let offset = 0;
+    let vertexCount = 4;
+    GL.drawArrays(GL.triangleStrip(gl), offset, vertexCount);
   }
 }
 
