@@ -5,11 +5,11 @@
     {mod, {'server-app', []}},
     {applications, [
         kernel,
-        stdlib
+        stdlib,
+        cowboy
     ]},
     {env,[]},
-    {modules, []},
+    {modules, [server, 'server-app', 'server-sup', handler]},
 
-    {licenses, ["Apache 2.0"]},
     {links, []}
  ]}.

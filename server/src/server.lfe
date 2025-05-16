@@ -51,11 +51,11 @@
 
 (defun handle_call
   (('stop _from state)
-    `#(stop shutdown ok ,state))
+   `#(stop shutdown ok ,state))
   ((`#(echo ,msg) _from state)
-    `#(reply ,msg ,state))
+   `#(reply ,msg ,state))
   ((message _from state)
-    `#(reply ,(unknown-command) ,state)))
+   `#(reply ,(unknown-command) ,state)))
 
 (defun handle_info
   ((`#(EXIT ,_from normal) state)
