@@ -1,7 +1,8 @@
-{application, 'my-lfe-main', [
-    {description, "A run-ready LFE script"},
+{application, 'server', [
+    {description, "An LFE application"},
     {vsn, git},
     {registered, []},
+    {mod, {'server-app', []}},
     {applications, [
         kernel,
         stdlib

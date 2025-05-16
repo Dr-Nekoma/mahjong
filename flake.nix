@@ -30,6 +30,8 @@
     devShells.default = pkgs.mkShell {
       buildInputs = with pkgs; [
         just
+        rebar3
+        lfe
         nodejs
         (vscode-with-extensions.override {
             vscode = pkgs.vscodium;
