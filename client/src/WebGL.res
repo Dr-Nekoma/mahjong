@@ -2,35 +2,47 @@ module GL = {
     type s
     type constant = float
     type webGLBuffer
-    type location
+    type webGLUniformLocation
     module Matrix = {
-        @send external uniformMatrix4fv : (location, bool, Mat4.mat4) => unit = "uniformMatrix4fv"
-
+        @send external uniformMatrix4fv : (
+          s,
+          webGLUniformLocation,
+          bool,
+          Mat4.mat4
+        ) => unit = "uniformMatrix4fv"
     }
     module Canvas = {
         type t
         @get external get : s => t = "canvas"
         @get external clientHeight : t => constant = "clientHeight"
-        @get external clientWidth : t => constant = "clientWidth"        
+        @get external clientWidth : t => constant = "clientWidth"
     }
     module Buffers = {
         @get external colorBufferBit: s => constant = "COLOR_BUFFER_BIT"
         @get external arrayBuffer: s => constant = "ARRAY_BUFFER"
-        @get external depthBufferBit: s => constant = "DEPTH_BUFFER_BIT"        
+        @get external depthBufferBit: s => constant = "DEPTH_BUFFER_BIT"
     }
     module ProgramInfo = {
-        type t
         type program
-        type webGLUniformLocation
+        type attribLocations = { vertexPosition: constant }
+        type uniformLocations = {
+          projectionMatrix: Nullable.t<webGLUniformLocation>,
+          modelViewMatrix: Nullable.t<webGLUniformLocation>
+        }
+        type t = {
+          program: program,
+          attribLocations: attribLocations,
+          uniformLocations: uniformLocations,
+        }
         @get external program: s => program = "program"
         @send external useProgram : program => unit = "useProgram"
         @send external create : s => t = "createProgram"
         @send external link : (s, t) => unit = "linkProgram"
         @send external getParameter : (s, t, constant) => bool = "getProgramParameter"
-        @send external getAttribLocation : (s, t, string) => int = "getAttribLocation"
+        @send external getAttribLocation : (s, t, string) => constant = "getAttribLocation"
         @send external _getUniformLocation : (s, t, string) => Nullable.t<webGLUniformLocation> = "getUniformLocation"
         let getUniformLocation = (s, t, string) => { _getUniformLocation(s, t, string) |> Nullable.toOption }
-        
+
     }
     module Shader = {
         type t
@@ -51,16 +63,19 @@ module GL = {
     @send external attachShader : (s, ProgramInfo.t, Shader.t) => unit = "attachShader"
     @send external clearColor : (s, float, float, float, float) => unit = "clearColor"
     @send external clearDepth : (s, constant) => unit = "clearDepth"
-    @get external depthTest: s => constant = "DEPTH_TEST"    
+    @get external depthTest: s => constant = "DEPTH_TEST"
+    @get external float : s => constant = "FLOAT"
     @send external depthFunc : (s, constant) => unit = "depthFunc"
-    @get external lequal: s => constant = "LEQUAL"        
-    @send external enable : (s, constant) => unit = "enable"    
+    @get external lequal: s => constant = "LEQUAL"
+    @send external enable : (s, constant) => unit = "enable"
     @send external clear : (s, float) => unit = "clear"
     @send external createBuffer : s => webGLBuffer = "createBuffer"
     @send external bindBuffer : (s, constant, webGLBuffer) => unit = "bindBuffer"
     @send external bufferData : (s, constant, Float32Array.t, constant) => unit = "bufferData"
+    @send external vertexAttribPointer : (s, constant, int, constant, bool, int, int) => unit = "vertexAttribPointer" // FIXME
+    @send external enableVertexAttribArray : (s, constant) => unit = "enableVertexAttribArray"
     @get external staticDraw: s => constant = "STATIC_DRAW"
-    
+
     let initPositionBuffer = (gl: s): webGLBuffer => {
         // Create a buffer for the square's positions.
         let positionBuffer = createBuffer(gl);
@@ -81,14 +96,14 @@ module GL = {
     }
 
     type buffer = {
-        "position": webGLBuffer
+        position: webGLBuffer
     };
 
     let initBuffers = (gl: s): buffer => {
         let positionBuffer = initPositionBuffer(gl);
 
         {
-            "position": positionBuffer,
+            position: positionBuffer,
         };
     }
 

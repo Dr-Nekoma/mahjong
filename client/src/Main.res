@@ -33,29 +33,29 @@ let loadShader = (gl: GL.s, typ: GL.constant, src: string): option<GL.Shader.t> 
       } else {
         Some(shader);
       }
-  } 
+  }
 }
 
-let initShaderProgram = (gl: GL.s, vsSource: string, fsSource: string): option<GL.Program.t> => {
+let initShaderProgram = (gl: GL.s, vsSource: string, fsSource: string): option<GL.ProgramInfo.t> => {
   open WebGL.GL
 
   let vertexShaderMay = loadShader(gl, Shader.vertex(gl), vsSource);
   let fragmentShaderMay = loadShader(gl, Shader.fragment(gl), fsSource);
 
   switch (vertexShaderMay, fragmentShaderMay) {
-    | (Some(vertexShader), Some(fragmentShader)) => 
-      let shaderProgram = Program.create(gl);
+    | (Some(vertexShader), Some(fragmentShader)) =>
+      let shaderProgram = ProgramInfo.create(gl);
       attachShader(gl, shaderProgram, vertexShader);
       attachShader(gl, shaderProgram, fragmentShader);
-      Program.link(gl, shaderProgram);
+      ProgramInfo.link(gl, shaderProgram);
 
-      if (!Program.getParameter(gl, shaderProgram, Shader.linkStatus(gl))) {
+      if (!ProgramInfo.getParameter(gl, shaderProgram, Shader.linkStatus(gl))) {
         Console.log("Failed in getParameter function call");
         None;
       } else {
         Some(shaderProgram);
       }
-    | _ => 
+    | _ =>
       Console.log("Failed creating shaders");
       None;
   }
@@ -87,13 +87,14 @@ let main = () => {
               let programInfo = {
                 "program": shaderProgram,
                 "attribLocations": {
-                  "vertexPosition": GL.Program.getAttribLocation(gl, shaderProgram, "aVertexPosition"),
+                  "vertexPosition": GL.ProgramInfo.getAttribLocation(gl, shaderProgram, "aVertexPosition"),
                 },
                 "uniformLocations": {
-                  "projectionMatrix": getExn(GL.Program.getUniformLocation(gl, shaderProgram, "uProjectionMatrix")),
-                  "modelViewMatrix": getExn(GL.Program.getUniformLocation(gl, shaderProgram, "uModelViewMatrix")),
+                  "projectionMatrix": getExn(GL.ProgramInfo.getUniformLocation(gl, shaderProgram, "uProjectionMatrix")),
+                  "modelViewMatrix": getExn(GL.ProgramInfo.getUniformLocation(gl, shaderProgram, "uModelViewMatrix")),
                 },
               };
+              Console.log(programInfo);
           }
       }
   }

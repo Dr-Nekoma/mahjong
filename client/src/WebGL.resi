@@ -1,7 +1,18 @@
 module GL: {
     type s
     type constant
-    
+    type webGLBuffer
+    type webGLUniformLocation
+
+    module Matrix: {
+        let uniformMatrix4fv : (
+          s,
+          webGLUniformLocation,
+          bool,
+          Mat4.mat4
+        ) => unit
+    }
+
     module Canvas: {
         type t
         let get : s => t
@@ -10,18 +21,27 @@ module GL: {
     }
     module Buffers: {
         let colorBufferBit: s => constant
-        let depthBufferBit: s => constant        
+        let arrayBuffer : s => constant
+        let depthBufferBit: s => constant
     }
     module ProgramInfo: {
-        type t
-        type webGLUniformLocation
         type program
+        type attribLocations = { vertexPosition: constant }
+        type uniformLocations = {
+          projectionMatrix: Nullable.t<webGLUniformLocation>,
+          modelViewMatrix: Nullable.t<webGLUniformLocation>
+        }
+        type t = {
+          program: program,
+          attribLocations: attribLocations,
+          uniformLocations: uniformLocations,
+        }
         let program: s => program
         let useProgram : program => unit
         let create : s => t
         let link : (s, t) => unit
         let getParameter : (s, t, constant) => bool
-        let getAttribLocation : (s, t, string) => int
+        let getAttribLocation : (s, t, string) => constant
         let getUniformLocation : (s, t, string) => option<webGLUniformLocation>
     }
     module Shader: {
@@ -40,15 +60,20 @@ module GL: {
         let delete : (s, t) => unit
     }
     let attachShader : (s, ProgramInfo.t, Shader.t) => unit
+    let bindBuffer : (s, constant, webGLBuffer) => unit
+    let bufferData : (s, constant, Float32Array.t, constant) => unit
+    let vertexAttribPointer : (s, constant, int, constant, bool, int, int) => unit
+    let enableVertexAttribArray : (s, constant) => unit
     let clearColor : (s, float, float, float, float) => unit
-    let clearDepth : (s, constant) => unit
+    let clearDepth : (s, float) => unit
     let depthTest: s => constant
+    let float : s => constant
     let depthFunc : (s, constant) => unit
-    let lequal: s => constant
+    let lequal : s => constant
     let enable : (s, constant) => unit
     let clear : (s, constant) => unit
 
-    type buffer
+    type buffer = { position: webGLBuffer }
     let initBuffers : s => buffer
 
 }
