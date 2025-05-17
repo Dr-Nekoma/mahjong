@@ -11,8 +11,8 @@
 
 (defun start (_type _args)
   (let* ((dispatch  (cowboy_router:compile '[#(_ [#("/" handler [])])]))
-         (`#(ok ,_) (cowboy:start_http 'http 100 '[#(port 4040)]
-                      `[#(env [#(dispatch ,dispatch)])])))
+         (`#(ok ,_) (cowboy:start_clear 'http (list #(port 4040))
+                      (map 'env (map 'dispatch dispatch)))))
     (server-sup:start_link)))
 
 (defun stop (_state)
