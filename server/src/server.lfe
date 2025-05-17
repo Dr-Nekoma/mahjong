@@ -3,6 +3,7 @@
   ;; gen_server implementation
   (export
    (start_link 0)
+   (start 0)
    (stop 0))
   ;; callback implementation
   (export
@@ -36,6 +37,12 @@
                          (initial-state)
                          (genserver-opts)))
 
+(defun start ()
+  (let* ((dispatch (cowboy_router:compile (list (tuple '_ (list #("/" trash []))))))
+	 (proc (cowboy:start_clear 'http (list #('port 8080)) (map 'env (map 'dispatch dispatch)))))
+    (case proc
+      (#('ok _) (start_link)))))
+  
 (defun stop ()
   (gen_server:call (SERVER) 'stop))
 
