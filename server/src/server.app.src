@@ -1,15 +1,11 @@
-{application, 'server', [
-    {description, "An LFE application"},
-    {vsn, git},
-    {registered, []},
-    {mod, {'server-app', []}},
-    {applications, [
-        kernel,
-        stdlib,
-        cowboy
-    ]},
-    {env,[]},
-    {modules, [server, 'server-app', 'server-sup', handler]},
-
-    {links, []}
- ]}.
+{application,    'server',
+ [{description,  "Mahjong LFE Server."},
+  {vsn,          "1"},
+  {modules,      ['server',
+                  'server-sup',
+                  'server-app',
+                  'handler']},
+  {registered,   ['server-sup']},
+  {applications, [kernel, stdlib, cowboy]},
+  {mod,          {'server-app', []}},
+  {env,          []}]}.

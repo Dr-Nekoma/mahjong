@@ -23,6 +23,7 @@
 ;;;===================================================================
 
 (defun content_types_provided (req state)
+  (io:format "~p\n" (list state))
   `#([#(#"text/html"        hello->html)
       #(#"application/json" hello->json)
       #(#"text/plain"       hello->text)]
