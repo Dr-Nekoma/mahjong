@@ -10,15 +10,10 @@
 ;;; application implementation
 ;;; --------------------------
 
-(defun play (state)
-  (receive
-    (_ (progn
-	 (io:format "I've passed in here buddy xD!")
-	 (play state)))))
 
 (defun start (_type _args)
-  (let* ((game (spawn 'server-app 'play `(,(map 'session (self)))))
-	 (dispatch  (cowboy_router:compile `#(_ [#("/" handler [,game])]))))
+  (let* ((game (spawn 'server-app 'game:play/1 `(,(map 'session (self)))))
+	 (dispatch  (cowboy_router:compile `#(_ [#("/" handler (list ,game))])))
          (`#(ok ,_) (cowboy:start_clear 'http (list #(port 4040))
                       (map 'env (map 'dispatch dispatch)))))
     (server-sup:start_link)))
