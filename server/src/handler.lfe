@@ -36,6 +36,7 @@
 
 (defun hello->html (req state)
   "Return hello in HTML."
+  (! (lists:nth 1 state) "HTML")
   (let ((body #"<html>
 <head>
   <meta charset=\"utf-8\">
@@ -49,9 +50,11 @@
 
 (defun hello->json (req state)
   "Return a JSON-formatted hello."
+  (! (lists:nth 1 state) "JSON")
   (let ((body #"{\"rest\": \"Hello World!\"}"))
     `#(,body ,req ,state)))
 
 (defun hello->text (req state)
   "Return a text hello."
+  (! (lists:nth 1 state) #"TEXT")
   `#(#"REST Hello World as text!" ,req ,state))

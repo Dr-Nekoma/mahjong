@@ -18,7 +18,7 @@
 
 (defun start (_type _args)
   (let* ((game (spawn 'server-app 'play `(,(map 'session (self)))))
-	 (dispatch  (cowboy_router:compile '[#(_ [#("/" handler [game])])]))
+	 (dispatch  (cowboy_router:compile `#(_ [#("/" handler [,game])]))))
          (`#(ok ,_) (cowboy:start_clear 'http (list #(port 4040))
                       (map 'env (map 'dispatch dispatch)))))
     (server-sup:start_link)))
