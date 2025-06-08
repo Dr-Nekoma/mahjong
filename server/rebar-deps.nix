@@ -6,21 +6,23 @@ let
   packages = with self; {
     ranch = builder {
       name = "ranch";
-      version = "1.8.0";
-      src = fetchHex {
-        pkg = "ranch";
-        version = "1.8.0";
-        sha256 = "sha256-SfvP02gvqx9dEJNRthJXZ22hov2+KVkEF21eUhot3+U=";
+      version = "git";
+      src = fetchFromGitHub {
+        owner = "ninenines";
+        repo = "ranch";
+        rev = "10b51304b26062e0dbfd5e74824324e9a911e269";
+        sha256 = "1fx7pnpq7sg9l9n6wlly1v2sikq1y7sxci318ciidbq8g0pv3mfm";
       };
       beamDeps = [ ];
     };
     cowlib = builder {
       name = "cowlib";
-      version = "2.13.0";
-      src = fetchHex {
-        pkg = "cowlib";
-        version = "2.13.0";
-        sha256 = "sha256-4eEoTcP8Awpksa0Ng4KufpnaRsMka4FTGKS4SIc4AKQ=";
+      version = "git";
+      src = fetchFromGitHub {
+        owner = "ninenines";
+        repo = "cowlib";
+        rev = "d0ab49ed797e5bb48209825428d26947d74aabd5";
+        sha256 = "0b22c2dy3gpnq53l0w1k8mjf1dr0gpbd36fwv7a6kfzd5lsgdpaw";
       };
       beamDeps = [ ];
     };
@@ -56,11 +58,12 @@ let
     };
     cowboy = builder {
       name = "cowboy";
-      version = "2.12.0";
-      src = fetchHex {
-        pkg = "cowboy";
-        version = "2.12.0";
-        sha256 = "sha256-inq+bRgzcs6yHKonCb7JKKsrcuGKORGqF3Fjm++CZR4=";
+      version = "git";
+      src = fetchFromGitHub {
+        owner = "ninenines";
+        repo = "cowboy";
+        rev = "24d32de931a0c985ff7939077463fc8be939f0e9";
+        sha256 = "01h8523q2v41wnczmx68wi2a4akjx3v6lbsdqhdibgzz8cs16zlz";
       };
       beamDeps = [ cowlib ranch ];
     };
