@@ -4,17 +4,24 @@
   (export
    (start 2)
    (play 1)
-   (stop 1)))
+   (stop 1))
+  )
 
 ;;; --------------------------
 ;;; application implementation
 ;;; --------------------------
 
+(defun play (state)
+  (receive
+    (_ (progn
+	 (io:format "I've passed in here buddy xD!")
+	 (play state)))))
+
 
 (defun start (_type _args)
-  (let* ((game (spawn 'server-app 'game:play/1 `(,(map 'session (self)))))
-	 (dispatch  (cowboy_router:compile `#(_ [#("/" handler (list ,game))])))
-         (`#(ok ,_) (cowboy:start_clear 'http (list #(port 4040))
+  "Start the application."
+  (let* ((dispatch  (cowboy_router:compile '[#(_ [#(_ handler [])])]))
+         (`#(ok ,_) (cowboy:start_clear 'http '[#(port 4040)]
                       (map 'env (map 'dispatch dispatch)))))
     (server-sup:start_link)))
 
