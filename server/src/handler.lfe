@@ -36,7 +36,7 @@
 
 (defun hello->html (req state)
   "Return hello in HTML."
-  ;(! (lists:nth 1 state) "HTML")
+  (! (lists:nth 1 state) "HTML")
   (let ((body #"<html>
 <head>
   <meta charset=\"utf-8\">
