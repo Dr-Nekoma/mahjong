@@ -33,29 +33,6 @@
         rebar3
         lfe
         nodejs
-        (vscode-with-extensions.override {
-            vscode = pkgs.vscodium;
-            vscodeExtensions = pkgs.vscode-utils.extensionsFromVscodeMarketplace ([
-            {
-              name = "rescript-vscode";
-              publisher = "chenglou92";
-              version = "1.62.0";
-              sha256 = "sha256-yUAhysTM9FXo9ZAzrto+tnjnofIUEQAGBg3tjIainrY=";
-            }
-            {
-              name = "Nix";
-              publisher = "bbenoist";
-              version = "1.0.1";
-              sha256 = "sha256-qwxqOGublQeVP2qrLF94ndX/Be9oZOn+ZMCFX1yyoH0=";
-            }
-            {
-              name = "just";
-              publisher = "skellock";
-              version = "2.0.0";
-              sha256 = "sha256-FOp/dcW0+07rADEpUMzx+SGYjhvE4IhcCOqUQ38yCN4=";
-            }
-            ]);
-        })
       ];
     };
     packages = {
