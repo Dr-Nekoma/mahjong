@@ -1,0 +1,14 @@
+{application,    'server',
+ [{description,  "Mahjong LFE Server."},
+  {vsn,          "1"},
+  {modules,      [
+    'game',
+    'server',
+    'server-sup',
+    'server-app',
+    'handler'
+  ]},
+  {registered,   ['server-sup']},
+  {applications, [kernel, sasl, stdlib, cowboy]},
+  {mod,          {'server-app', []}},
+  {env,          []}]}.
