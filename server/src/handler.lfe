@@ -36,7 +36,11 @@
 
 (defun hello->html (req state)
   "Return hello in HTML."
-  (! state "HTML")
+  (! state (tuple 'discard 2 1 (self)))
+  (receive
+    ((tuple 'success new-state) (io:format "Success: ~p\n" (list new-state)))
+    ((tuple 'error msg) (io:format "Error: ~p\n" (list msg)))
+    (anything (io:format "Catchall: ~p\n" (list anything))))  
   (let ((body #"<html>
 <head>
   <meta charset=\"utf-8\">

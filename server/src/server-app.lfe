@@ -14,7 +14,7 @@
 
 (defun start (_type _args)
   "Start the application."
-  (let* ((game (spawn 'game 'play `(,(map 'session (self)))))
+  (let* ((game (spawn 'game 'play `(,(game:initial-game))))
          (dispatch  (cowboy_router:compile `[#(_ [#(_ handler ,game)])]))
          (`#(ok ,_) (cowboy:start_clear 'http '[#(port 4040)]
                       (map 'env (map 'dispatch dispatch)))))
