@@ -76,6 +76,8 @@
 
 ;; TODO: Have two separate processes one for auth another for the game
 ;; TODO: Add discarded piece into discarded pile of player
+;; TODO: When discard we must calculate available pon, kan, chi to inform FE that they can click to make
+;; these moves
 (defun play (state)
     (receive
       ((tuple 'discard index player pid)
@@ -85,5 +87,6 @@
 		  (hand (get-in state current-hand))
 		  (next-state (update-in state current-hand (remove hand index))))
 	     (game-loop pid next-state))
-	   (game-error pid "You can't discard right now"))))))
+	   (game-error pid "You can't discard right now"))))
+      ((tuple 'draw ))))
 
