@@ -33,6 +33,7 @@
         rebar3
         lfe
         nodejs
+        erlang
       ];
     };
     packages = {
