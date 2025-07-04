@@ -5,16 +5,19 @@
    (next-player 1))
   (export-macro can-play? loop error))
 
-(defun initial-player() (map 'hand (list 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
-			     'discard-pile (list)
-			     'open-hand (list)))
+(defun initial-player ()
+  (map
+    'hand (list 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+    'discard-pile (list)
+    'open-hand (list)))
 
-(defun initial-game() (map 'current-player 1
-			   'players (tuple
-				     (initial-player)
-				     (initial-player)
-				     (initial-player)
-				     (initial-player))))
+(defun initial-game ()
+  (map 'current-player 1
+       'players (tuple
+                  (initial-player)
+                  (initial-player)
+                  (initial-player)
+                  (initial-player))))
 
 (defmacro error (pid msg)
   `(progn
