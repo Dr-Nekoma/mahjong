@@ -53,7 +53,7 @@
 ;; TODO: Have two separate processes one for auth another for the game
 (defun play (state)
     (receive
-      ((tuple 'discard index player pid) (actions:discard state index player pid))
+      ((tuple 'discard index player pid) (actions:discard state player index pid))
+      ((tuple 'draw player pid) (actions:draw state player pid))
       ((tuple 'open-hand player pid) (actions:open-hand state player pid))
       ((tuple 'open-hand player piece pid) state)))
-

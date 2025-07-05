@@ -36,9 +36,11 @@
 
 (defun hello->html (req state)
   "Return hello in HTML."
-  (! state (tuple 'discard 2 1 (self)))
+  (! state (tuple 'draw 1 (self)))
   (receive
-    ((tuple 'success new-state) (io:format "Success: ~p\n" (list new-state)))
+    ((tuple 'success new-state)
+     (io:format "Success: ~p\nWall length: ~p\n"
+                (list new-state (length (map-get new-state 'wall)))))
     ((tuple 'error msg) (io:format "Error: ~p\n" (list msg)))
     (anything (io:format "Catchall: ~p\n" (list anything))))  
   (let ((body #"<html>
