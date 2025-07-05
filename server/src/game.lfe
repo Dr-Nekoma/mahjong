@@ -5,24 +5,34 @@
    (next-player 1))
   (export-macro can-play? loop error))
 
-(defun initial-player ()
+(defun initial-player (hand)
   (map
-    'hand (list 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+    'hand hand
     'discard-pile (list)
     'open-hand (list)))
 
+(defun times
+  ((0 f input) input)
+  ((n f input) (when (< 0 n)) (times (- n 1) f (funcall f input))))
+
+(defun split-hand
+  (((tuple hands wall))
+   (let (((tuple hand remaining-wall) (lists:split 14 wall)))
+     (tuple (cons hand hands) remaining-wall))))
+
 (defun initial-game ()
-  (map 'current-player 1
-       'players (tuple
-                  (initial-player)
-                  (initial-player)
-                  (initial-player)
-                  (initial-player))))
+  (let* (((tuple hands wall) (clj:->> (tiles:shuffle (tiles:initial-wall))
+                               (tuple (list))
+                               (times 4 (function split-hand 1)))))
+    (map
+      'current-player 1
+      'wall wall
+      'players (list_to_tuple (lists:map (function initial-player 1) hands)))))
 
 (defmacro error (pid msg)
   `(progn
      (! ,pid #(error ,msg))
-     (play state)))
+     (game:play state)))
 
 (defun next-player (state)
   (map-update state 'current-player (clj:-> state (map-get 'current-player) (+ 1) (rem 4))))

@@ -3,6 +3,7 @@
   {vsn,          "1"},
   {modules,      [
     'collections',
+    'tiles',
     'actions',
     'game',
     'server',
