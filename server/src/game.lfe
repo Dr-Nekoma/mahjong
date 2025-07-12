@@ -3,7 +3,7 @@
    (play 1)
    (initial-game 0)
    (next-player 1))
-  (export-macro can-play? loop error))
+  (export-macro loop error))
 
 (defun initial-player (hand)
   (map
@@ -42,18 +42,11 @@
      (! ,pid (tuple 'success ,next-state))
      (game:play (game:next-player ,next-state))))
 
-(defmacro can-play? (state player error-msg form)
-  `(let ((current-player (map-get ,state 'current-player)))
-     (if (== ,player current-player)
-       ,form
-       (game:error pid ,error-msg))))
-
 ;; TODO: When discard we must calculate available pon, kan, chi for all the other players
 ;; to inform FE that they can click to make these moves
 ;; TODO: Have two separate processes one for auth another for the game
 (defun play (state)
-    (receive
-      ((tuple 'discard index player pid) (actions:discard state player index pid))
-      ((tuple 'draw player pid) (actions:draw state player pid))
-      ((tuple 'open-hand player pid) (actions:open-hand state player pid))
-      ((tuple 'open-hand player piece pid) state)))
+  (receive
+    ((tuple 'discard params) (actions:discard (map-set params 'state state)))
+    ((tuple 'draw params) (actions:draw (map-set params 'state state)))
+    ((tuple 'open-hand params) (actions:open-hand (map-set params 'state state)))))

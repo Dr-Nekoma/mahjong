@@ -1,15 +1,21 @@
 (defmodule actions
   (export
-   (discard 4)
-   (open-hand 3)
-   (draw 3))
+   (discard 1)
+   (open-hand 1)
+   (draw 1))
   (module-alias (collections coll)))
 
-(scm:defsyntax defaction
-  ([action-name [state player . args] error-msg . body]
-   [defun action-name (state player . args)
-     (game:can-play? state player error-msg
-       (progn . body))]))
+(defmacro defaction
+  (`[,action-name ,args ,error-msg . ,body]
+   `(defun ,action-name (arg)
+      (let ((,`(map ,@(lists:merge
+                        (lists:map (lambda (sym) (list `',sym sym))
+                                   args)))
+             arg))
+        (let ((current-player (coll:get-in arg '(state current-player))))
+          (if (== current-player (coll:get-in arg '(player)))
+            (progn ,@body)
+            (game:error (coll:get-in arg '(pid)) ,error-msg)))))))
 
 (defaction discard (state player index pid)
   "Cannot discard from your hand."

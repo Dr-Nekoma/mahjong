@@ -36,7 +36,7 @@
 
 (defun hello->html (req state)
   "Return hello in HTML."
-  (! state (tuple 'draw 1 (self)))
+  (! state (tuple 'draw (map 'player 1 'pid (self))))
   (receive
     ((tuple 'success new-state)
      (io:format "Success: ~p\nWall length: ~p\n"
