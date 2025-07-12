@@ -17,16 +17,18 @@
             (progn ,@body)
             (game:error (coll:get-in arg '(pid)) ,error-msg)))))))
 
-(defaction discard (state player index pid)
+(defaction discard (state player tile pid)
   "Cannot discard from your hand."
   (let* ((current-hand (list 'players current-player 'hand))
          (current-pile (list 'players current-player 'discard-pile))
          (hand (coll:get-in state current-hand))
+         (tile-count (coll:mset-count hand tile))
          (next-state (clj:-> state
-                             (coll:update-in current-hand (coll:remove hand index))
-                             (coll:update-in current-pile (cons (lists:nth index hand)
-                                                            (coll:get-in state current-pile))))))
-    (game:loop pid next-state)))
+                             (coll:update-in current-hand (coll:mset-remove hand tile))
+                             (coll:update-in current-pile (cons tile (coll:get-in state current-pile))))))
+    (if (< tile-count 1)
+      (game:error pid "Cannot discard chosen tile.")
+      (game:loop pid next-state))))
 
 ;; (defun kan ())
 
@@ -34,13 +36,25 @@
 
 ;; (defun pon ())
 
+;; closed hand win conditions
+;; every set must be a flush
+;; 4 sets of 3 pieces each, straight or three-of-a-kind, plus a pair
+;; 7 pairs
+;; when you're one piece away from reaching that condition, you can call
+;; riichi before discarding
+;; after calling riichi, if you draw the tile you are missing, you earn a point
+
+;;
+
+; open hand win conditions
+
 (defaction draw (state player pid)
   "Cannot draw"
   (let* ((current-hand (list 'players current-player 'hand))
          ((cons next-tile wall) (coll:get-in state '(wall)))
          (hand (coll:get-in state current-hand))
          (next-state (clj:-> state
-                             (coll:update-in current-hand (cons next-tile hand))
+                             (coll:update-in current-hand (coll:mset-add hand next-tile))
                              (coll:update-in '(wall) wall))))
     (game:loop pid next-state)))
 

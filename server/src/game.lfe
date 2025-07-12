@@ -2,14 +2,26 @@
   (export
    (play 1)
    (initial-game 0)
-   (next-player 1))
-  (export-macro loop error))
+   (next-player 1)
+   (all-pairs? 1)
+   (count-pairs 1))
+  (export-macro loop error)
+  (module-alias (collections coll)))
 
-(defun initial-player (hand)
+(defun initial-player (hand-list)
   (map
-    'hand hand
+    'hand (lists:foldl (lambda (tile hand)
+                         (coll:mset-add hand tile))
+                       (coll:mset-empty)
+                       hand-list)
     'discard-pile (list)
     'open-hand (list)))
+
+(defun count-pairs (hand)
+  (maps:fold (lambda (tile count acc) (+ acc (div count 2))) 0 hand))
+
+(defun all-pairs? (hand)
+  (== 7 (count-pairs hand)))
 
 (defun times
   ((0 f input) input)

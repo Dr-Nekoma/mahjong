@@ -3,7 +3,13 @@
    (get-in 2)
    (update-nth 3)
    (update-in 3)
-   (remove 2)))
+   (remove 2)
+   (mset-count 2)
+   (mset-add 2)
+   (mset-remove 2)
+   (mset-minus 2)
+   (mset-plus 2)
+   (mset-empty 0)))
 
 (defun get-in
   ((mapp '()) mapp)
@@ -31,3 +37,26 @@
   (((cons head tail) '1) tail)
   (((cons head tail) n) (when (< 1 n))
    (cons head (remove tail (- n 1)))))
+
+(defun mset-count (mset value)
+  (try (map-get mset value) (catch (_ 0))))
+
+(defun mset-add (mset value)
+  (let ((count (mset-count mset value)))
+    (map-set mset value (+ count 1))))
+
+(defun mset-remove (mset value)
+  (let ((count (mset-count mset value)))
+    (if (< count 2)
+      (map-remove mset value)
+      (map-set mset value (- count 1)))))
+
+(defun mset-minus (mset1 mset2)
+  (clj:->>
+    (maps:merge_with (lambda (_ l r) (- l r)) mset1 mset2)
+    (maps:filter (lambda (_ v) (< 0 v)))))
+
+(defun mset-plus (mset1 mset2)
+  (maps:merge_with (lambda (_ l r) (+ l r)) mset1 mset2))
+
+(defun mset-empty () (map))
