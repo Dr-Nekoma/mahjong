@@ -1,103 +1,194 @@
-open WebGL
+open Browser
 
-let vsSource = `
-    attribute vec4 aVertexPosition;
-    uniform mat4 uModelViewMatrix;
-    uniform mat4 uProjectionMatrix;
-    void main() {
-      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+let canvasWidth = 600
+let canvasHeight = 300
+
+let pieceWidth = 60
+let pieceHeight = 80
+
+type position = {
+  x: float,
+  y: float,
+}
+
+type isDragging = No | Yes({draggingOffset: position})
+
+type pieceState = {
+  position: position,
+  isDragging: isDragging,
+}
+
+type gameState = {piece: pieceState}
+
+let initialGameState: gameState = {
+  piece: {
+    position: {
+      x: 0.0,
+      y: 0.0,
+    },
+    isDragging: No,
+  },
+}
+
+type pointerState = {
+  isDown: bool,
+  position: position,
+}
+
+let pointerState = ref({
+  isDown: false,
+  position: {
+    x: 0.0,
+    y: 0.0,
+  },
+})
+
+let nextGameState = (gameState: gameState, pointerState: pointerState) => {
+  switch (gameState, pointerState) {
+  | (_, {isDown: false}) => {
+      piece: {
+        ...gameState.piece,
+        isDragging: No,
+      },
     }
-`;
+  | ({piece: {isDragging: Yes({draggingOffset})}}, {isDown: true}) => {
+      piece: {
+        ...gameState.piece,
+        position: {
+          x: pointerState.position.x -. draggingOffset.x,
+          y: pointerState.position.y -. draggingOffset.y,
+        },
+      },
+    }
+  | ({piece: {isDragging: No}}, {isDown: true}) => {
+      let isPointerOnPiece =
+        pointerState.position.x >= gameState.piece.position.x &&
+        pointerState.position.x <= gameState.piece.position.x +. pieceWidth->Int.toFloat &&
+        pointerState.position.y >= gameState.piece.position.y &&
+        pointerState.position.y <= gameState.piece.position.y +. pieceHeight->Int.toFloat
 
-let fsSource = `
-  void main() {
-    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-  }
-`;
-
-let loadShader = (gl: GL.s, typ: GL.constant, src: string): option<GL.Shader.t>  => {
-  open WebGL.GL
-
-  switch Shader.create(gl, typ) {
-    | None => Console.log("Unable to create shader."); None;
-    | Some(shader) =>
-
-      Shader.source(gl, shader, src);
-
-      Shader.compile(gl, shader);
-
-      if (!Shader.getParameter(gl, shader, Shader.compileStatus(gl))) {
-        Console.log("Failed in getParameter function call");
-        Shader.delete(gl, shader);
-        None;
+      let isDragging = if isPointerOnPiece {
+        Yes({
+          draggingOffset: {
+            x: pointerState.position.x -. gameState.piece.position.x,
+            y: pointerState.position.y -. gameState.piece.position.y,
+          },
+        })
       } else {
-        Some(shader);
+        No
       }
+
+      {
+        piece: {
+          ...gameState.piece,
+          isDragging,
+        },
+      }
+    }
   }
 }
 
-let initShaderProgram = (gl: GL.s, vsSource: string, fsSource: string): option<GL.ProgramInfo.t> => {
-  open WebGL.GL
+let draw = (context: Canvas.context2d, image: Dom.imageElement, gameState: gameState) => {
+  context->Canvas.fillStyle("white")
+  context->Canvas.fillRect(
+    ~x=0.0,
+    ~y=0.0,
+    ~width=canvasWidth->Int.toFloat,
+    ~height=canvasHeight->Int.toFloat,
+  )
 
-  let vertexShaderMay = loadShader(gl, Shader.vertex(gl), vsSource);
-  let fragmentShaderMay = loadShader(gl, Shader.fragment(gl), fsSource);
-
-  switch (vertexShaderMay, fragmentShaderMay) {
-    | (Some(vertexShader), Some(fragmentShader)) =>
-      let shaderProgram = ProgramInfo.create(gl);
-      attachShader(gl, shaderProgram, vertexShader);
-      attachShader(gl, shaderProgram, fragmentShader);
-      ProgramInfo.link(gl, shaderProgram);
-
-      if (!ProgramInfo.getParameter(gl, shaderProgram, Shader.linkStatus(gl))) {
-        Console.log("Failed in getParameter function call");
-        None;
-      } else {
-        Some(shaderProgram);
-      }
-    | _ =>
-      Console.log("Failed creating shaders");
-      None;
-  }
+  context->Canvas.drawImage(
+    image,
+    ~dx=gameState.piece.position.x,
+    ~dy=gameState.piece.position.y,
+    ~dWidth=pieceWidth->Int.toFloat,
+    ~dHeight=pieceHeight->Int.toFloat,
+  )
 }
 
-let main = () => {
-  let canvasMay = DOM.querySelector("canvas")
+let lastFrameStartTime: ref<option<float>> = ref(None)
 
-  switch canvasMay {
-      | None =>
-        Console.log("Unable to initialize the canvas.");
-      | Some(canvas) =>
+let rec gameLoop = (context: Canvas.context2d, image: Dom.imageElement, gameState: gameState) => {
+  requestAnimationFrame(time => {
+    switch lastFrameStartTime.contents {
+    | None => ()
+    | Some(lastTime) => Console.log2("frame time:", time -. lastTime)
+    }
 
-      let glMay = DOM.getContext(canvas, "webgl")
+    lastFrameStartTime.contents = Some(time)
 
-      switch glMay {
-        | None =>
-          Console.log("Unable to initialize WebGL. Your browser or machine may not support it.");
-        | Some(gl) =>
-          Console.log(gl);
-          GL.clearColor(gl, 0.0, 0.0, 0.0, 1.0);
-          GL.clear(gl, GL.Buffers.colorBufferBit(gl));
-
-          switch initShaderProgram(gl, vsSource, fsSource) {
-            | None =>
-              Console.log("Could not init shader program");
-            | Some(shaderProgram) =>
-              open Option
-              let programInfo = {
-                "program": shaderProgram,
-                "attribLocations": {
-                  "vertexPosition": GL.ProgramInfo.getAttribLocation(gl, shaderProgram, "aVertexPosition"),
-                },
-                "uniformLocations": {
-                  "projectionMatrix": getExn(GL.ProgramInfo.getUniformLocation(gl, shaderProgram, "uProjectionMatrix")),
-                  "modelViewMatrix": getExn(GL.ProgramInfo.getUniformLocation(gl, shaderProgram, "uModelViewMatrix")),
-                },
-              };
-              Console.log(programInfo);
-          }
-      }
-  }
-
+    let newGameState = nextGameState(gameState, pointerState.contents)
+    draw(context, image, newGameState)
+    gameLoop(context, image, newGameState)
+  })
 }
-main();
+
+let canvasOpt =
+  Dom.document
+  ->Dom.querySelector("canvas")
+  ->Option.flatMap(Dom.toCanvas)
+
+canvasOpt->Option.forEach(canvas => {
+  canvas->Canvas.setWidth(canvasWidth)
+  canvas->Canvas.setHeight(canvasHeight)
+
+  canvas
+  ->Canvas.toElement
+  ->Dom.addEventListener(
+    #pointerdown(
+      _ => {
+        pointerState.contents = {
+          ...pointerState.contents,
+          isDown: true,
+        }
+      },
+    ),
+  )
+
+  canvas
+  ->Canvas.toElement
+  ->Dom.addEventListener(
+    #pointerup(
+      _ => {
+        pointerState.contents = {
+          ...pointerState.contents,
+          isDown: false,
+        }
+      },
+    ),
+  )
+
+  canvas
+  ->Canvas.toElement
+  ->Dom.addEventListener(
+    #pointermove(
+      event => {
+        pointerState.contents = {
+          ...pointerState.contents,
+          position: {
+            x: event->Dom.offsetX,
+            y: event->Dom.offsetY,
+          },
+        }
+      },
+    ),
+  )
+
+  canvas
+  ->Canvas.getContext2d
+  ->Option.forEach(context => {
+    let image = Image.new()
+
+    image
+    ->Image.toElement
+    ->Dom.addEventListener(
+      #load(
+        () => {
+          gameLoop(context, image, initialGameState)
+        },
+      ),
+    )
+
+    image->Image.setSrc("/assets/piece_front.png")
+  })
+})
