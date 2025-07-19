@@ -1,13 +1,8 @@
 (defmodule melds
-  (export
-   (three-of-a-kind? 2)
-   (all-pairs? 1)
-   (riichi-melds? 1)
-   (count-straights 1)
-   (count-three-of-a-kind 1))
+  (export (riichi-melds? 1))
   (module-alias (collections coll)))
 
-(defrecord tile suit spec) ; TODO: deduplicate
+(include-lib "records.lfe")
 
 (defmacro nlet
   (`(,label ,bindings . ,body)
@@ -52,32 +47,20 @@
      ('error 'error))))
 
 (defun riichi-melds? (hand)
-  (let ((sorted-tiles (lists:sort (maps:keys hand))))
-    (nlet recur ((partial-hands
-                  (clj:->> hand
-                    (maps:filter (lambda (_ count) (=< 2 count)))
-                    (maps:keys)
-                    (lists:map (lambda (key)
-                                 (coll:mset-minus hand (map key 2)))))))
-      (if (== partial-hands '())
-        'false
-        (let (((cons partial-hand partial-hands) partial-hands))
-          (case (foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
-            ((tuple 'ok (map)) 'true)
-            (_ (recur partial-hands))))))))
-
-(defun count-straights (hand)
-  (let ((pairs (clj:->> hand (maps:filter (lambda (tile count) (>= count 2)) hand) (maps:keys))))
-    (maps:fold
-     ()
-     ()
-     (lists:fold_left (lambda (pair acc) (maps:puts pair 2 acc)) (map) pairs))))
-
-(defun count-three-of-a-kind (hand)
-  (maps:fold (lambda (tile count acc) (if (== 3 count) (clj:inc acc))) 0 hand))
-
-(defun three-of-a-kind? (hand three-of-a-kind)
-  (== three-of-a-kind (count-three-of-a-kind hand)))
+  (or (all-pairs? hand)
+      (let ((sorted-tiles (lists:sort (maps:keys hand))))
+	(nlet recur ((partial-hands
+                      (clj:->> hand
+			       (maps:filter (lambda (_ count) (=< 2 count)))
+			       (maps:keys)
+			       (lists:map (lambda (key)
+					    (coll:mset-minus hand (map key 2)))))))
+	      (if (== partial-hands '())
+		'false
+		(let (((cons partial-hand partial-hands) partial-hands))
+		  (case (foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
+		    ((tuple 'ok (map)) 'true)
+		    (_ (recur partial-hands)))))))))
 
 (defun count-pairs (hand)
   (maps:fold (lambda (tile count acc) (+ acc (div count 2))) 0 hand))

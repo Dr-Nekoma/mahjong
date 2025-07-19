@@ -1,7 +1,7 @@
 (defmodule tiles
   (export all))
 
-(defrecord tile suit spec)
+(include-lib "records.lfe")
 
 (defun numbered-suits ()
   (list 'bamboo 'circle 'character))
