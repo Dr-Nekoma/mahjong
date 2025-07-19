@@ -5,8 +5,7 @@
    (start 2)
    (stop 1))
   (import
-    (from game (play 1)))
-  )
+    (from game (play 1))))
 
 ;;; --------------------------
 ;;; application implementation
@@ -23,4 +22,3 @@
 (defun stop (_state)
   (server-sup:stop)
   'ok)
-
