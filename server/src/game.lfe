@@ -17,12 +17,6 @@
     'discard-pile (list)
     'open-hand (list)))
 
-(defun count-pairs (hand)
-  (maps:fold (lambda (tile count acc) (+ acc (div count 2))) 0 hand))
-
-(defun all-pairs? (hand)
-  (== 7 (count-pairs hand)))
-
 (defun times
   ((0 f input) input)
   ((n f input) (when (< 0 n)) (times (- n 1) f (funcall f input))))

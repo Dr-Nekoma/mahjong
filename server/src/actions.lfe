@@ -30,6 +30,14 @@
       (game:error pid "Cannot discard chosen tile.")
       (game:loop pid next-state))))
 
+;; Definition 1. Closed Hand: when you have all your pieces in your hand (14)
+  ;; Winning Conditions:
+    ;; 4 sets of 3 pieces each, straight or three-of-a-kind, plus a pair
+    ;; 7 pairs
+;; Definition 2. Open Hand: when you have some pieces in your hand AND some pieces on the table
+;; in order to form kan OR chi OR pon.
+
+
 ;; (defun kan ())
 
 ;; (defun chi ())
@@ -38,8 +46,7 @@
 
 ;; closed hand win conditions
 ;; every set must be a flush
-;; 4 sets of 3 pieces each, straight or three-of-a-kind, plus a pair
-;; 7 pairs
+
 ;; when you're one piece away from reaching that condition, you can call
 ;; riichi before discarding
 ;; after calling riichi, if you draw the tile you are missing, you earn a point
