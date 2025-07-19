@@ -2,9 +2,7 @@
   (export
    (play 1)
    (initial-game 0)
-   (next-player 1)
-   (all-pairs? 1)
-   (count-pairs 1))
+   (next-player 1))
   (export-macro loop error)
   (module-alias (collections coll)))
 
