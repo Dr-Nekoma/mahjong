@@ -24,9 +24,9 @@
       (lists:merge
         (list
           (lc ((<- color (dragon-colors)))
-            (make-record tile suit 'dragon spec color))
+            (record tile suit 'dragon spec color))
           (lc ((<- direction (wind-directions)))
-            (make-record tile suit 'wind spec direction))
+            (record tile suit 'wind spec direction))
           (lc ((<- suit (numbered-suits))
                (<- number (lists:seq 1 9)))
-            (make-record tile suit suit spec number)))))))
+            (record tile suit suit spec number)))))))
