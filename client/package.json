@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@rescript/core": "^1.6.1",
-    "rescript": "^11.1.4"
+    "rescript": "^11.1.4",
+    "three": "^0.179.1"
   },
   "devDependencies": {
     "@rescript/language-server": "^1.62.0",

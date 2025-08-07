@@ -1,194 +1,29 @@
 open Browser
+open Three
 
-let canvasWidth = 600
-let canvasHeight = 300
+let scene = Scene.new()
 
-let pieceWidth = 60
-let pieceHeight = 80
+let aspect = innerWidth->Int.toFloat /. innerHeight->Int.toFloat
+let camera = PerspectiveCamera.new(~fov=75.0, ~aspect, ~near=0.1, ~far=1000.0)
 
-type position = {
-  x: float,
-  y: float,
-}
+let renderer = WebGLRenderer.new()
 
-type isDragging = No | Yes({draggingOffset: position})
+renderer->WebGLRenderer.setSize(~width=innerWidth->Int.toFloat, ~height=innerHeight->Int.toFloat)
 
-type pieceState = {
-  position: position,
-  isDragging: isDragging,
-}
+let rendererElement = renderer->WebGLRenderer.domElement
 
-type gameState = {piece: pieceState}
+Dom.document->Dom.body->Dom.appendChild(~child=rendererElement)
 
-let initialGameState: gameState = {
-  piece: {
-    position: {
-      x: 0.0,
-      y: 0.0,
-    },
-    isDragging: No,
-  },
-}
+let geometry = BoxGeometry.new(~width=1.0, ~height=1.0, ~depth=1.0)
+let material = MeshBasicMaterial.new({"color": 0xF58220})
+let cube = Mesh.new(geometry, material)
 
-type pointerState = {
-  isDown: bool,
-  position: position,
-}
+scene->Scene.add(cube)
+camera->PerspectiveCamera.setZ(5.0)
 
-let pointerState = ref({
-  isDown: false,
-  position: {
-    x: 0.0,
-    y: 0.0,
-  },
-})
+renderer->WebGLRenderer.setAnimationLoop(() => {
+  cube->Mesh.setRotationX(cube->Mesh.getRotationX +. 0.01)
+  cube->Mesh.setRotationY(cube->Mesh.getRotationY +. 0.01)
 
-let nextGameState = (gameState: gameState, pointerState: pointerState) => {
-  switch (gameState, pointerState) {
-  | (_, {isDown: false}) => {
-      piece: {
-        ...gameState.piece,
-        isDragging: No,
-      },
-    }
-  | ({piece: {isDragging: Yes({draggingOffset})}}, {isDown: true}) => {
-      piece: {
-        ...gameState.piece,
-        position: {
-          x: pointerState.position.x -. draggingOffset.x,
-          y: pointerState.position.y -. draggingOffset.y,
-        },
-      },
-    }
-  | ({piece: {isDragging: No}}, {isDown: true}) => {
-      let isPointerOnPiece =
-        pointerState.position.x >= gameState.piece.position.x &&
-        pointerState.position.x <= gameState.piece.position.x +. pieceWidth->Int.toFloat &&
-        pointerState.position.y >= gameState.piece.position.y &&
-        pointerState.position.y <= gameState.piece.position.y +. pieceHeight->Int.toFloat
-
-      let isDragging = if isPointerOnPiece {
-        Yes({
-          draggingOffset: {
-            x: pointerState.position.x -. gameState.piece.position.x,
-            y: pointerState.position.y -. gameState.piece.position.y,
-          },
-        })
-      } else {
-        No
-      }
-
-      {
-        piece: {
-          ...gameState.piece,
-          isDragging,
-        },
-      }
-    }
-  }
-}
-
-let draw = (context: Canvas.context2d, image: Dom.imageElement, gameState: gameState) => {
-  context->Canvas.fillStyle("white")
-  context->Canvas.fillRect(
-    ~x=0.0,
-    ~y=0.0,
-    ~width=canvasWidth->Int.toFloat,
-    ~height=canvasHeight->Int.toFloat,
-  )
-
-  context->Canvas.drawImage(
-    image,
-    ~dx=gameState.piece.position.x,
-    ~dy=gameState.piece.position.y,
-    ~dWidth=pieceWidth->Int.toFloat,
-    ~dHeight=pieceHeight->Int.toFloat,
-  )
-}
-
-let lastFrameStartTime: ref<option<float>> = ref(None)
-
-let rec gameLoop = (context: Canvas.context2d, image: Dom.imageElement, gameState: gameState) => {
-  requestAnimationFrame(time => {
-    switch lastFrameStartTime.contents {
-    | None => ()
-    | Some(lastTime) => Console.log2("frame time:", time -. lastTime)
-    }
-
-    lastFrameStartTime.contents = Some(time)
-
-    let newGameState = nextGameState(gameState, pointerState.contents)
-    draw(context, image, newGameState)
-    gameLoop(context, image, newGameState)
-  })
-}
-
-let canvasOpt =
-  Dom.document
-  ->Dom.querySelector("canvas")
-  ->Option.flatMap(Dom.toCanvas)
-
-canvasOpt->Option.forEach(canvas => {
-  canvas->Canvas.setWidth(canvasWidth)
-  canvas->Canvas.setHeight(canvasHeight)
-
-  canvas
-  ->Canvas.toElement
-  ->Dom.addEventListener(
-    #pointerdown(
-      _ => {
-        pointerState.contents = {
-          ...pointerState.contents,
-          isDown: true,
-        }
-      },
-    ),
-  )
-
-  canvas
-  ->Canvas.toElement
-  ->Dom.addEventListener(
-    #pointerup(
-      _ => {
-        pointerState.contents = {
-          ...pointerState.contents,
-          isDown: false,
-        }
-      },
-    ),
-  )
-
-  canvas
-  ->Canvas.toElement
-  ->Dom.addEventListener(
-    #pointermove(
-      event => {
-        pointerState.contents = {
-          ...pointerState.contents,
-          position: {
-            x: event->Dom.offsetX,
-            y: event->Dom.offsetY,
-          },
-        }
-      },
-    ),
-  )
-
-  canvas
-  ->Canvas.getContext2d
-  ->Option.forEach(context => {
-    let image = Image.new()
-
-    image
-    ->Image.toElement
-    ->Dom.addEventListener(
-      #load(
-        () => {
-          gameLoop(context, image, initialGameState)
-        },
-      ),
-    )
-
-    image->Image.setSrc("/assets/piece_front.png")
-  })
+  renderer->WebGLRenderer.render(scene, camera)
 })
