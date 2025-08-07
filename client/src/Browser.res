@@ -1,6 +1,12 @@
 @val
 external requestAnimationFrame: (float => unit) => unit = "requestAnimationFrame"
 
+@val @scope("window")
+external innerWidth: int = "innerWidth"
+
+@val @scope("window")
+external innerHeight: int = "innerHeight"
+
 module Dom = {
   type document
   type element
@@ -9,6 +15,12 @@ module Dom = {
 
   @val
   external document: document = "document"
+
+  @get
+  external body: document => element = "body"
+
+  @send
+  external appendChild: (element, ~child: element) => unit = "appendChild"
 
   @send @return(nullable)
   external querySelector: (document, string) => option<element> = "querySelector"
