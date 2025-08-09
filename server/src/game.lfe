@@ -13,7 +13,9 @@
                        (coll:mset-empty)
                        hand-list)
     'discard-pile (list)
-    'open-hand (list)))
+    'open-hand (list)
+    'yaku-han (map)
+    'stick-deposit 0))
 
 (defun times
   ((0 f input) input)
@@ -53,4 +55,6 @@
   (receive
     ((tuple 'discard params) (actions:discard (map-set params 'state state)))
     ((tuple 'draw params) (actions:draw (map-set params 'state state)))
+    ((tuple 'riichi params) (actions:riichi (map-set params 'state state)))
+    ;; ((tuple 'win params) (actions:win ()))
     ((tuple 'open-hand params) (actions:open-hand (map-set params 'state state)))))

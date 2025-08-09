@@ -2,7 +2,8 @@
   (export
    (discard 1)
    (open-hand 1)
-   (draw 1))
+   (draw 1)
+   (riichi 1))
   (module-alias (collections coll)))
 
 (defmacro defaction
@@ -64,6 +65,29 @@
                              (coll:update-in current-hand (coll:mset-add hand next-tile))
                              (coll:update-in '(wall) wall))))
     (game:loop pid next-state)))
+
+(defaction riichi (state player pid)
+  "Cannot call riichi"
+  (let* ((current-player-state (coll:get-in state (list 'players current-player)))
+         ((map 'hand hand
+	       'yaku-han yaku-han
+	       'stick-deposit stick-deposit
+	       'open-hand open-hand)
+	  current-player-state)
+	 ;; TODO: Modify `yaku:call-riichi?` to check if hand has 14 tiles
+	 ;; If that is enforced, we don't need to check for the emptiness of the open hand
+         (can-call-riichi? (and (yaku:call-riichi? hand)
+			        (== 0 (maps:get 'riichi yaku-han 0))
+				(== (coll:get-in state open-hand)
+				    (list))))
+	 (next-yaku-han (map-set yaku-han 'riichi 1)))
+    (if can-call-riichi?
+      (game:loop pid (coll:update-in
+			   state
+			   (list 'players current-player)
+			   (map-set current-player-state
+				    'yaku-han next-yaku-han 'stick-deposit (+ stick-deposit 1000))))
+      (game:loop pid state))))
 
 (defaction open-hand (state player pid)
   "Cannot open your hand."
