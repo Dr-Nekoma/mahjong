@@ -102,3 +102,13 @@ module Performance = {
   @val @scope("performance")
   external now: unit => float = "now"
 }
+
+module Fetch = {
+  type response
+
+  @val
+  external get: string => Promise.t<response> = "fetch"
+
+  @send
+  external json: response => Promise.t<JSON.t> = "json"
+}
