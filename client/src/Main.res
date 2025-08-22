@@ -27,3 +27,32 @@ renderer->WebGLRenderer.setAnimationLoop(() => {
 
   renderer->WebGLRenderer.render(scene, camera)
 })
+
+type joke = {
+  setup: string,
+  delivery: string,
+}
+
+let jsonToJoke = (json: JSON.t): option<joke> => {
+  switch json {
+  | Object(jokeDict) =>
+    switch (jokeDict->Core__Dict.get("setup"), jokeDict->Core__Dict.get("delivery")) {
+    | (Some(String(setup)), Some(String(delivery))) => Some({setup, delivery})
+    | _ => None
+    }
+  | _ => None
+  }
+}
+
+@val
+external alert: string => unit = "alert"
+
+Fetch.get("https://sv443.net/jokeapi/v2/joke/Programming")
+->Promise.then(response => response->Fetch.json)
+->Promise.thenResolve(json =>
+  jsonToJoke(json)->Option.forEach(joke => {
+    alert(joke.setup)
+    alert(joke.delivery)
+  })
+)
+->Promise.done
