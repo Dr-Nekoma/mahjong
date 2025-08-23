@@ -9,7 +9,9 @@
    (mset-remove 2)
    (mset-minus 2)
    (mset-plus 2)
-   (mset-empty 0)))
+   (mset-empty 0)
+   (map-indexed 2)
+   (tmap 2)))
 
 (defun get-in
   ((mapp '()) mapp)
@@ -60,3 +62,14 @@
   (maps:merge_with (lambda (_ l r) (+ l r)) mset1 mset2))
 
 (defun mset-empty () (map))
+
+(defun map-indexed (f l)
+  (prelude:nlet recur ((l l)
+                       (index 1))
+    (case l
+      (`(,elem . ,tail) (cons (funcall f elem index)
+                              (recur tail (+ index 1))))
+      (`() (list)))))
+
+(defun tmap (f t)
+  (clj:->> t (tuple_to_list) (map-indexed f) (list_to_tuple)))

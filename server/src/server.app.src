@@ -2,6 +2,7 @@
  [{description,  "Mahjong LFE Server."},
   {vsn,          "1"},
   {modules,      [
+    'prelude',
     'collections',
     'tiles',
     'actions',
