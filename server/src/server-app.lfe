@@ -5,7 +5,7 @@
    (start 2)
    (stop 1))
   (import
-   (from game (play 1))
+   (from game (decider 1))
    (from session (blah 1))
    ))
 
@@ -15,7 +15,7 @@
 
 (defun start (_type _args)
   "start the application."
-  (let* ((game (spawn 'game 'play `(,(game:initial-game))))
+  (let* ((game (spawn 'game 'decider `(,(game:initial-game))))
 	 ;; (name-server (spawn 'session 'name-server `(,(map))))
          (dispatch  (cowboy_router:compile `[#(_ [#("/" session '())])]))
          (`#(ok ,_) (cowboy:start_clear 'http '[#(port 4040)]

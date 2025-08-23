@@ -1,6 +1,6 @@
 (defmodule game
   (export
-   (play 1)
+   (decider 1)
    (initial-game 0)
    (next-player 1))
   (export-macro loop error)
@@ -38,7 +38,7 @@
 (defmacro error (pid msg)
   `(progn
      (! ,pid #(error ,msg))
-     (game:play state)))
+     (game:decider state)))
 
 (defun next-player (state)
   (map-update state 'current-player (clj:-> state (map-get 'current-player) (+ 1) (rem 4))))
@@ -46,12 +46,13 @@
 (defmacro loop (pid next-state)
   `(progn
      (! ,pid (tuple 'success ,next-state))
-     (game:play (game:next-player ,next-state))))
+     ;; TODO: send the state to the player processes
+     (game:decider (game:next-player ,next-state))))
 
 ;; TODO: When discard we must calculate available pon, kan, chi for all the other players
 ;; to inform FE that they can click to make these moves
 ;; TODO: Have two separate processes one for auth another for the game
-(defun play (state)
+(defun decider (state)
   (receive
     ((tuple 'discard params) (actions:discard (map-set params 'state state)))
     ((tuple 'draw params) (actions:draw (map-set params 'state state)))
