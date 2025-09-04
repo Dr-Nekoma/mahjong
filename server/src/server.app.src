@@ -4,6 +4,7 @@
   {modules,      [
     'prelude',
     'collections',
+    'xml',
     'tiles',
     'actions',
     'game',

@@ -6,13 +6,22 @@
     (waiting-player 1)
     (full-state->player-state 2)
     (available-actions 1)
-    (room 1))
-  (export (trash 2))
+    (room 1)
+    (initial-room 0))
+  (export (allowed_methods 2)
+          (handler 2)
+          (content_types_accepted 2))
   (module-alias (collections coll)))
 
 (defun init (req opts)
   "Switch to the REST protocol and start executing the state machine."
-  `#(ok ,(trash req opts) ,opts))
+  `#(cowboy_rest ,req ,opts))
+
+(defun allowed_methods (req state)
+  `#([#"GET" #"HEAD" #"OPTIONS" #"POST"] ,req ,state))
+
+(defun content_types_accepted (req state)
+  `#([#(#"application/xml" handler)] ,req ,state))
 
 (defun public-information ()
   '(discard-pile open-hand))
@@ -68,6 +77,10 @@
      (io:format "Everything set! Ready, go!\n" (list))
      (player initial-state number))))
 
+(defun initial-room ()
+  (map
+    'players '()))
+
 ;; state :: {players :: { number :: int; pid :: bigint; ready? :: bool } list;
 ;;           decider-pid :: bigint}
 ;; TODO: This does not take into account people disconnecting or closing the browser.
@@ -80,17 +93,17 @@
 	    (player-number (+ players-count 1)))
        (if (< players-count 4)
 	 (progn
-	   (! http-id `#(connected ,player-number))
+	   (! http-id `#(ok ,player-number))
 	   (room (coll:update-in state '(players)
 			 (cons (tuple player-number
 				      (spawn 'session 'waiting-player `(,player-number))
 				      'false)  players))))
 	 (progn
-	   (! http-id 'room-is-full)
+	   (! http-id `#(error room-is-full))
 	   (room state)))))
     (`#(ready ,http-id ,player-id)
      (progn
-       (! http-id `#(ready ,player-id))
+       (! http-id `ok)
        ;; updates the ready status of each player,
        ;; which is the third value in the tuple
        (room (coll:update-in state `(players ,player-id 3) 'true))))
@@ -124,12 +137,23 @@
 	   (room state))
 	  (anything (io:format "Catchall: ~p\n" (list anything))))))))
 
-(defun body ()
-  "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Mahjong Room</title><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>:root{--bg:#fff;--fg:#1f2937;--muted:#6b7280;--accent:#2563eb;--good:#059669;--warn:#d97706;--bad:#dc2626;--row:#f8fafc;--ring:#e5e7eb}@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--fg:#e5e7eb;--muted:#9ca3af;--accent:#60a5fa;--good:#34d399;--warn:#fbbf24;--bad:#f87171;--row:#111827;--ring:#1f2937}}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,\\\"Segoe UI\\\",Roboto,\\\"Helvetica Neue\\\",Arial,\\\"Noto Sans\\\",\\\"Liberation Sans\\\",\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\";background:var(--bg);color:var(--fg)}.wrap{max-width:760px;margin:40px auto;padding:0 16px}h1{font-size:1.25rem;margin:0 0 12px}.sub{color:var(--muted);font-size:.9rem;margin-bottom:16px}table{width:100%;border-collapse:collapse;background:var(--bg);border:1px solid var(--ring);border-radius:12px;overflow:hidden}caption{caption-side:top;padding:12px 14px;font-weight:600;text-align:left}thead th{text-align:left;font-size:.85rem;letter-spacing:.02em;color:var(--muted);padding:10px 12px;background:var(--row);border-bottom:1px solid var(--ring)}tbody td{padding:12px;border-bottom:1px solid var(--ring);vertical-align:middle}tbody tr:last-child td{border-bottom:0}.seat{white-space:nowrap;font-variant-numeric:tabular-nums}.seat .wind{font-size:1.05rem;margin-right:.4rem}.player{display:flex;align-items:center;gap:10px}.player .tag{font-size:.7rem;padding:2px 8px;border-radius:999px;border:1px solid var(--ring);color:var(--muted)}.dealer{color:var(--accent);font-weight:600}.score{font-variant-numeric:tabular-nums}.pos{color:var(--good)}.neg{color:var(--bad)}.riichi{font-variant-numeric:tabular-nums}.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--ring);font-size:.8rem;white-space:nowrap}.yes{color:var(--good)}.no{color:var(--muted)}.status{display:inline-flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:999px;background:var(--good);display:inline-block}.dot.off{background:var(--bad)}.actions{color:var(--muted);font-size:.9rem}@media(max-width:560px){.hide-sm{display:none}caption{padding-bottom:0}}</style></head><body><div class=\"wrap\"><h1>Room A • East 2 (1/4)</h1><div class=\"sub\">Round: E2 • Honba: 1 • Riichi Pool: 2</div><table role=\"table\" aria-label=\"Mahjong room player table\"><caption>Players</caption><thead><tr><th scope=\"col\">Seat</th><th scope=\"col\">Player</th><th scope=\"col\" class=\"hide-sm\">Dealer</th><th scope=\"col\">Score</th><th scope=\"col\">Riichi</th><th scope=\"col\">Tenpai</th><th scope=\"col\" class=\"hide-sm\">Connection</th><th scope=\"col\" class=\"hide-sm\">Last Action</th></tr></thead><tbody><tr><td class=\"seat\"><span class=\"wind\">東</span> East</td><td class=\"player\"><span class=\"name\">Marcos</span><span class=\"tag\">Host</span></td><td class=\"dealer\">Dealer</td><td class=\"score pos\">27,900</td><td class=\"riichi\">1 stick</td><td><span class=\"pill yes\">Yes</span></td><td class=\"status hide-sm\"><span class=\"dot\"></span> Online</td><td class=\"actions hide-sm\">Discarded 3m</td></tr><tr><td class=\"seat\"><span class=\"wind\">南</span> South</td><td class=\"player\"><span class=\"name\">Anna</span></td><td>—</td><td class=\"score pos\">31,200</td><td class=\"riichi\">0</td><td><span class=\"pill no\">No</span></td><td class=\"status hide-sm\"><span class=\"dot\"></span> Online</td><td class=\"actions hide-sm\">Called Pon (🀙)</td></tr><tr><td class=\"seat\"><span class=\"wind\">西</span> West</td><td class=\"player\"><span class=\"name\">Ken</span></td><td>—</td><td class=\"score neg\">22,000</td><td class=\"riichi\">1 stick</td><td><span class=\"pill no\">No</span></td><td class=\"status hide-sm\"><span class=\"dot off\"></span> Offline</td><td class=\"actions hide-sm\">Draw</td></tr><tr><td class=\"seat\"><span class=\"wind\">北</span> North</td><td class=\"player\"><span class=\"name\">Lu</span></td><td>—</td><td class=\"score pos\">38,900</td><td class=\"riichi\">0</td><td><span class=\"pill yes\">Yes</span></td><td class=\"status hide-sm\"><span class=\"dot\"></span> Online</td><td class=\"actions hide-sm\">Riichi</td></tr></tbody></table></div></body></html>")
+;(defun body ()
+;  "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Mahjong Room</title><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>:root{--bg:#fff;--fg:#1f2937;--muted:#6b7280;--accent:#2563eb;--good:#059669;--warn:#d97706;--bad:#dc2626;--row:#f8fafc;--ring:#e5e7eb}@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--fg:#e5e7eb;--muted:#9ca3af;--accent:#60a5fa;--good:#34d399;--warn:#fbbf24;--bad:#f87171;--row:#111827;--ring:#1f2937}}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,\\\"Segoe UI\\\",Roboto,\\\"Helvetica Neue\\\",Arial,\\\"Noto Sans\\\",\\\"Liberation Sans\\\",\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\";background:var(--bg);color:var(--fg)}.wrap{max-width:760px;margin:40px auto;padding:0 16px}h1{font-size:1.25rem;margin:0 0 12px}.sub{color:var(--muted);font-size:.9rem;margin-bottom:16px}table{width:100%;border-collapse:collapse;background:var(--bg);border:1px solid var(--ring);border-radius:12px;overflow:hidden}caption{caption-side:top;padding:12px 14px;font-weight:600;text-align:left}thead th{text-align:left;font-size:.85rem;letter-spacing:.02em;color:var(--muted);padding:10px 12px;background:var(--row);border-bottom:1px solid var(--ring)}tbody td{padding:12px;border-bottom:1px solid var(--ring);vertical-align:middle}tbody tr:last-child td{border-bottom:0}.seat{white-space:nowrap;font-variant-numeric:tabular-nums}.seat .wind{font-size:1.05rem;margin-right:.4rem}.player{display:flex;align-items:center;gap:10px}.player .tag{font-size:.7rem;padding:2px 8px;border-radius:999px;border:1px solid var(--ring);color:var(--muted)}.dealer{color:var(--accent);font-weight:600}.score{font-variant-numeric:tabular-nums}.pos{color:var(--good)}.neg{color:var(--bad)}.riichi{font-variant-numeric:tabular-nums}.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--ring);font-size:.8rem;white-space:nowrap}.yes{color:var(--good)}.no{color:var(--muted)}.status{display:inline-flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:999px;background:var(--good);display:inline-block}.dot.off{background:var(--bad)}.actions{color:var(--muted);font-size:.9rem}@media(max-width:560px){.hide-sm{display:none}caption{padding-bottom:0}}</style></head><body><div class=\"wrap\"><h1>Room A • East 2 (1/4)</h1><div class=\"sub\">Round: E2 • Honba: 1 • Riichi Pool: 2</div><table role=\"table\" aria-label=\"Mahjong room player table\"><caption>Players</caption><thead><tr><th scope=\"col\">Seat</th><th scope=\"col\">Player</th><th scope=\"col\" class=\"hide-sm\">Dealer</th><th scope=\"col\">Score</th><th scope=\"col\">Riichi</th><th scope=\"col\">Tenpai</th><th scope=\"col\" class=\"hide-sm\">Connection</th><th scope=\"col\" class=\"hide-sm\">Last Action</th></tr></thead><tbody><tr><td class=\"seat\"><span class=\"wind\">東</span> East</td><td class=\"player\"><span class=\"name\">Marcos</span><span class=\"tag\">Host</span></td><td class=\"dealer\">Dealer</td><td class=\"score pos\">27,900</td><td class=\"riichi\">1 stick</td><td><span class=\"pill yes\">Yes</span></td><td class=\"status hide-sm\"><span class=\"dot\"></span> Online</td><td class=\"actions hide-sm\">Discarded 3m</td></tr><tr><td class=\"seat\"><span class=\"wind\">南</span> South</td><td class=\"player\"><span class=\"name\">Anna</span></td><td>—</td><td class=\"score pos\">31,200</td><td class=\"riichi\">0</td><td><span class=\"pill no\">No</span></td><td class=\"status hide-sm\"><span class=\"dot\"></span> Online</td><td class=\"actions hide-sm\">Called Pon (🀙)</td></tr><tr><td class=\"seat\"><span class=\"wind\">西</span> West</td><td class=\"player\"><span class=\"name\">Ken</span></td><td>—</td><td class=\"score neg\">22,000</td><td class=\"riichi\">1 stick</td><td><span class=\"pill no\">No</span></td><td class=\"status hide-sm\"><span class=\"dot off\"></span> Offline</td><td class=\"actions hide-sm\">Draw</td></tr><tr><td class=\"seat\"><span class=\"wind\">北</span> North</td><td class=\"player\"><span class=\"name\">Lu</span></td><td>—</td><td class=\"score pos\">38,900</td><td class=\"riichi\">0</td><td><span class=\"pill yes\">Yes</span></td><td class=\"status hide-sm\"><span class=\"dot\"></span> Online</td><td class=\"actions hide-sm\">Riichi</td></tr></tbody></table></div></body></html>")
 
-(defun trash (req _state)
-  "Return a text hello."
-  (io:format "Request: ~p\n" (list (cowboy_req:read_body req)))
-  (let ((room-pid (spawn 'session 'room (list (map))))
-	(body-str (body))
-    `#(,body-str ,req ,state))))
+(defun handler (req state)
+  (let* ((room-pid (mref state 'room))
+         (body (clj:-> (cowboy_req:read_body req)
+                 (tref 2)
+                 (xml:one-element))))
+    (case body
+      (`#(connect ,_)
+       (! room-pid (tuple 'connect (self)))
+       (receive
+         (`#(ok ,player-number)
+          `#(true ,req ,state))
+         (`#(error ,_)
+          `#(false ,req ,state))))
+      (`#(ready #m(player-id ,id)) ; TODO: read ID from the cookie
+       (! room-pid (tuple 'ready (self) (list_to_integer id)))
+       (receive
+         ('ok `#(true ,req ,state)))))))

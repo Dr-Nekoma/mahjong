@@ -4,6 +4,7 @@
    (update-nth 3)
    (update-in 3)
    (remove 2)
+   (mref-safe 2)
    (mset-count 2)
    (mset-add 2)
    (mset-remove 2)
@@ -79,3 +80,6 @@
 
 (defun tmap (f t)
   (clj:->> t (tuple_to_list) (map-indexed f) (list_to_tuple)))
+
+(defun mref-safe (map key)
+  (try (tuple 'ok (mref map key)) (catch (_ #(error not-found)))))

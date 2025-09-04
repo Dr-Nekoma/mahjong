@@ -17,7 +17,7 @@
   "start the application."
   (let* ((game (spawn 'game 'decider `(,(game:initial-game))))
 	 ;; (name-server (spawn 'session 'name-server `(,(map))))
-         (dispatch  (cowboy_router:compile `[#(_ [#("/" session '())])]))
+         (dispatch  (cowboy_router:compile `[#(_ [#("/" session ,(map 'room (spawn 'session 'room (list (session:initial-room)))))])]))
          (`#(ok ,_) (cowboy:start_clear 'http '[#(port 4040)]
                       (map 'env (map 'dispatch dispatch)))))
     (server-sup:start_link)))
