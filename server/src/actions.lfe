@@ -1,7 +1,6 @@
 (defmodule actions
   (export
    (discard 1)
-   (open-hand 1)
    (draw 1)
    (riichi 1))
   (module-alias (collections coll)))
@@ -13,12 +12,13 @@
                         (lists:map (lambda (sym) (list `',sym sym))
                                    args)))
              arg))
-        (let ((current-player (coll:get-in arg '(state current-player))))
-          (if (== current-player (coll:get-in arg '(player)))
+        (let ((current-player (coll:get-in arg '(state current-player)))
+	      (player (coll:get-in arg '(player))))
+          (if (== current-player player)
             (progn ,@body)
-            (game:error (coll:get-in arg '(pid)) ,error-msg)))))))
+            (game:error state player ,error-msg)))))))
 
-(defaction discard (state player tile pid)
+(defaction discard (state player tile)
   "Cannot discard from your hand."
   (let* ((current-hand (list 'players current-player 'hand))
          (current-pile (list 'players current-player 'discard-pile))
@@ -28,8 +28,8 @@
                              (coll:update-in current-hand (coll:mset-remove hand tile))
                              (coll:update-in current-pile (cons tile (coll:get-in state current-pile))))))
     (if (< tile-count 1)
-      (game:error pid "Cannot discard chosen tile.")
-      (game:loop pid next-state))))
+      (game:error state player "Cannot discard chosen tile.")
+      (game:loop next-state))))
 
 ;; Definition 1. Closed Hand: when you have all your pieces in your hand (14)
   ;; Winning Conditions:
@@ -56,7 +56,7 @@
 
 ; open hand win conditions
 
-(defaction draw (state player pid)
+(defaction draw (state player)
   "Cannot draw"
   (let* ((current-hand (list 'players current-player 'hand))
          ((cons next-tile wall) (coll:get-in state '(wall)))
@@ -64,9 +64,9 @@
          (next-state (clj:-> state
                              (coll:update-in current-hand (coll:mset-add hand next-tile))
                              (coll:update-in '(wall) wall))))
-    (game:loop pid next-state)))
+    (game:loop next-state)))
 
-(defaction riichi (state player pid)
+(defaction riichi (state player)
   "Cannot call riichi"
   (let* ((current-player-state (coll:get-in state (list 'players current-player)))
          ((map 'hand hand
@@ -82,14 +82,9 @@
 				    (list))))
 	 (next-yaku-han (map-set yaku-han 'riichi 1)))
     (if can-call-riichi?
-      (game:loop pid (coll:update-in
+      (game:loop (coll:update-in
 			   state
 			   (list 'players current-player)
 			   (map-set current-player-state
 				    'yaku-han next-yaku-han 'stick-deposit (+ stick-deposit 1000))))
-      (game:loop pid state))))
-
-(defaction open-hand (state player pid)
-  "Cannot open your hand."
-  ;; TODO
-  (game:loop pid state))
+      (game:loop state))))
