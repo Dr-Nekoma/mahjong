@@ -3,6 +3,7 @@
   {vsn,          "1"},
   {modules,      [
     'prelude',
+    'connect',
     'collections',
     'xml',
     'tiles',

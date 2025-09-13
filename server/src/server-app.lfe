@@ -11,7 +11,9 @@
 
 (defun start (_type _args)
   "start the application."
-  (let* ((dispatch  (cowboy_router:compile `[#(_ [#("/" session ,(map 'room (spawn 'session 'room (list (session:initial-room)))))])]))
+  (let* ((room-pid (spawn 'session 'room (list (session:initial-room))))
+         (dispatch  (cowboy_router:compile `[#(_ [#("/" session ,(map 'room room-pid))
+                                                  #("/connect" connect ,(map 'room room-pid))])]))
          (`#(ok ,_) (cowboy:start_clear 'http '[#(port 4040)]
                       (map 'env (map 'dispatch dispatch)))))
     (server-sup:start_link)))

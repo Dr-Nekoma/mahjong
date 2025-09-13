@@ -2,8 +2,8 @@
   (doc "REST hello world handler.")
   (export
     (init 2)
-    (player 2)
-    (waiting-player 1)
+    (player 3)
+    (waiting-player 2)
     (full-state->player-state 2)
     (available-actions 1)
     (room 1)
@@ -56,27 +56,29 @@
 
 ;; state: hand[2-man, 3-man, 1-pin, ...], last-command['discard], last-player[1], whoami[2]
 ;; returns: ['can-call-chi]
-(defun player (state number)
+(defun player (state number sse-pid)
   (receive
     (`#(new-state ,state)
      (let ((visible-state (full-state->player-state state number)))
        ;; TODO: push this to the frontend via SSE
-       (available-actions visible-state))
-     (io:format "Player ~p is ready to send via SSE!\n" (list number))
-     (player state number))
+       (available-actions visible-state)
+       (! sse-pid (tuple 'ok visible-state)))
+     (player state number sse-pid))
     (unknown
      (io:format "Unknown message: ~p\n" (list unknown))
-     (player state number))))
+     (player state number sse-pid))))
 
-(defun waiting-player (number)
+(defun waiting-player (number sse-pid)
   (receive
-    (`#(ready? ,another-player-number)
-     (io:format "Player ~p is ready!\n" (list another-player-number))
-     ;; TODO: We need to send a message to FE to inform that
-     )
+    (`#(ready ,another-player-number)
+     (! sse-pid
+       (tuple 'info
+         (io_lib:format "Player ~p is ready!\n" (list another-player-number))))
+     (waiting-player number sse-pid))
+    ('end (! sse-pid 'end))
     (`#(all-ready! ,initial-state)
      (io:format "Everything set! Ready, go!\n" (list))
-     (player initial-state number))))
+     (player initial-state number sse-pid))))
 
 (defun initial-room ()
   (map
@@ -88,50 +90,74 @@
 ;; We need to save more state (likely via mnesia) to recover from those situations.
 (defun room (state)
   (receive
-    (`#(connect ,http-id)
+    (`#(connect ,sse-pid)
      (let* ((players (map-get state 'players))
 	    (players-count (erlang:length players))
 	    (player-number (+ players-count 1)))
        (io:format "Somebody connected: ~p\n" (list player-number))
        (if (< players-count 4)
 	 (progn
-	   (! http-id `#(ok ,player-number))
+	   (! sse-pid `#(connected ,player-number))
 	   (room (coll:update-in state '(players)
 			 (cons (tuple player-number
-				      (spawn 'session 'waiting-player `(,player-number))
+				      (spawn 'session 'waiting-player `(,player-number ,sse-pid))
 				      'false)  players))))
 	 (progn
-	   (! http-id `#(error room-is-full))
+	   (! sse-pid `#(error "Cannot enter: room is full"))
 	   (room state)))))
     (`#(ready ,http-id ,player-id)
      ;; TODO: There should be a check for connect before a ready is signaled
      ;; TODO: Check for 4 players
      ;; Otherwise, someone may attempt to do a raw curl with ready without connecting first
-     (progn
-       (io:format "Somebody is ready: ~p\n" (list player-id))
-       (! http-id 'ok)
-       ;; updates the ready status of each player,
-       ;; which is the third value in the tuple
-       (room (coll:update-in state `(players ,player-id 3) 'true))))
+     (io:format "Ready: player ~p.\n" (list player-id))
+     (lists:foreach (lambda (player)
+        (let ((waiting-player-process (tref player 2)))
+          (! waiting-player-process `#(ready ,player-id))))
+      (map-get state 'players))
+     (! http-id 'ok)
+     ;; updates the ready status of each player,
+     ;; which is the third value in the tuple
+     (io:format "Current room: ~p\n" (list state))
+     (let* ((players (mref state 'players))
+            (player-position (+ 1 ; silly 1-based indexing
+                               (- (length players) player-id))))
+       ;; TODO: get rid of the lists.
+       (room (coll:update-in state `(players ,player-position 3) 'true))))
+    (`#(terminate ,http-id ,player-id)
+     (let* ((`#(,owner ,_ ,_) (lists:last (coll:get-in state '(players)))))
+       (if (== player-id owner)
+         (progn
+           (lists:foreach
+             (lambda (player)
+               (let ((waiting-player-process (tref player 2)))
+                 (! waiting-player-process `end)))
+             (map-get state 'players))
+           (! http-id 'ok)
+           (room (initial-room)))
+         (progn
+           (! http-id (tuple 'error "You do not own the room."))
+           (room state)))))
     (`#(start ,http-id ,player-id)
      ;; TODO: Same as other cases, handle the illegal state machine transitions
      (io:format "Somebody wants to start: ~p\n" (list player-id))
      (let* ((`#(,owner ,_ ,_) (coll:get-in state '(players 4)))
-	    (players (map-get state 'players))
-       	    (ready-players (lists:filter (lambda (player) (== 'true (coll:get-in player '(3)))) players))
-	    (ready-players-count (erlang:length ready-players)))
+            (players (map-get state 'players))
+            (ready-players (lists:filter (lambda (player) (== 'true (coll:get-in player '(3)))) players))
+            (ready-players-count (erlang:length ready-players)))
+       (io:format "Got inside the let.\nReady players: ~p\nOwner: ~p\nID: ~p\n"
+         (list ready-players-count owner player-id))
        (if (and (== ready-players-count 4) (== owner player-id))
-	 (let* ((players-pids (clj:->> players (lists:reverse) (lists:map (lambda (player) (tref player 2)))))
-		(initial-game-state (game:initial-game players-pids))
-		(decider-id (spawn 'game 'decider (list initial-game-state))))
-	   (lists:foreach (lambda (player)
-			    (let ((waiting-player-process (tref player 2)))
-			      (! waiting-player-process `#(all-ready! initial-game-state))))
-			  (map-get state 'players))
+         (let* ((players-pids (clj:->> players (lists:reverse) (lists:map (lambda (player) (tref player 2)))))
+                (initial-game-state (game:initial-game players-pids))
+                (decider-id (spawn 'game 'decider (list initial-game-state))))
+           (lists:foreach (lambda (player)
+                            (let ((waiting-player-process (tref player 2)))
+                              (! waiting-player-process `#(all-ready! initial-game-state))))
+                          (map-get state 'players))
            (io:format "This is the initial game: ~p\n" (list initial-game-state))
-	   (! http-id 'ok)
-	   (room (map-set state 'decider-id decider-id)))
-	 (! http-id `#(error "Either not all players are ready or someone started without being owner of the room")))))
+           (! http-id 'ok)
+           (room (map-set state 'decider-id decider-id)))
+         (! http-id `#(error "Either not all players are ready or someone started without being owner of the room")))))
     (`#(play ,raw-params ,http-id ,player-id)
      ;; TODO: Same situation as ready with connected
      ;; Error handling on this for malicious intent
@@ -147,12 +173,12 @@
                        (tref 2)
                        (xml:one-element))))
     (case body
-      (`#(connect ,_)
-       (! room-pid (tuple 'connect (self)))
+      (`#(terminate #m(player-id ,id))
+       (! room-pid (tuple 'terminate (self) (list_to_integer id)))
        (receive
-         (`#(ok ,player-number)
-          `#(true ,req ,state))
+         ('ok `#(true ,req ,state))
          (`#(error ,_)
+          ;; TODO: use the error message
           `#(false ,req ,state))))
       (`#(ready #m(player-id ,id)) ; TODO: read ID from the cookie
        (! room-pid (tuple 'ready (self) (list_to_integer id)))
@@ -161,7 +187,9 @@
        (! room-pid (tuple 'start (self) (list_to_integer id)))
        (receive
          ('ok `#(true ,req ,state))
-	 (`#(error ,_) `#(false ,req ,state))))
+         (`#(error ,msg)
+          (io:format "Errored out: ~p\n" (list msg))
+          `#(false ,req ,state))))
       (`#(play ,(= raw-params `#m(player-id ,id)))
        (! room-pid (tuple 'play raw-params (self) (list_to_integer id)))
        (receive ('ok `#(true ,req ,state)))))))
