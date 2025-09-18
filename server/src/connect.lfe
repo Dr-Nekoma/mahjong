@@ -8,7 +8,8 @@
                (map #"content-type" #"text/event-stream")
                req0))
         ((map 'room room-pid) state))
-    (cowboy_req:cast (tuple 'set_options (map 'idle_timeout 600000)) req0)
+    (cowboy_req:cast (tuple 'set_options (map 'idle_timeout 600000
+					      'reset_idle_timeout_on_send 'true)) req0)
     (! room-pid (tuple 'connect (self)))
     (tuple 'cowboy_loop req state)))
 
