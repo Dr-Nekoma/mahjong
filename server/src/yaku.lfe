@@ -9,10 +9,8 @@
 
 (defun triplet? (hand tile) (=< 3 (coll:mset-count hand tile)))
 
-(defun number? (tile) (lists:member (tile-suit tile) (tiles:numbered-suits)))
-
 (defun get-sequence (hand tile)
-  (if (number? tile)
+  (if (tiles:number? tile)
        (let* ((start (tile-spec tile))
 	      (tile+1 (update-tile-spec tile (+ start 1)))
               (tile+2 (update-tile-spec tile (+ start 2)))
@@ -34,7 +32,7 @@
     (cond
       ((triplet? partial-hand tile)
        (eliminate-tile (coll:mset-minus partial-hand (map tile 3)) tile))
-      ((number? tile)
+      ((tiles:number? tile)
        (funcall check-done (coll:mset-minus partial-hand (get-sequence partial-hand tile))))
       ('true (funcall check-done partial-hand)))))
 
@@ -67,7 +65,7 @@
        (let ((sorted-remaining (clj:->> remaining
 					(maps:keys)
 					(lists:sort)
-					(lists:filter (fun number? 1)))))
+					(lists:filter (fun tiles:number? 1)))))
 	 (lists:foldl (lambda (tile sequence?)
 			(or sequence? (maps:is_key (update-tile-spec tile (+ 1 (tile-spec tile))) remaining)))
 		      'false

@@ -6,6 +6,7 @@
     (waiting-player 2)
     (full-state->player-state 2)
     (available-actions 1)
+    (serialize-game 2)
     (room 1)
     (initial-room 0))
   (export (allowed_methods 2)
@@ -40,6 +41,44 @@
       'players players
       'you player-number)))
 
+(defun serialize-open-hand (list-melds)
+  (lists:map
+   (lambda (t)
+     (let (((tuple tag list-tiles) t))
+       (xmerl:export_simple_element (tuple tag '() (lists:map (fun tiles:serialize 1) list-tiles)) 'xmerl_xml)))
+   list-melds))
+
+(defun serialize-player (player-number)
+  (lambda (player index)
+    (xmerl:export_simple_element
+     (tuple 'player
+	    (if (== index player-number)
+	      ;; TODO: Serialize full individual non-redacted player state
+	      (list)
+	      (lists:foldl
+	       (lambda (info acc)
+		 (let ((value (map-get player info)))
+		   (case info
+		     ('discard-pile (cons
+				     (tuple 'discard-pile
+					    (xmerl:export_simple_element
+					     (tuple 'discard-pile '() (lists:map (fun tiles:serialize 1) value)) 'xmerl_xml)) acc))
+		     ('open-hand (cons
+				  (tuple 'open-hand
+					 (xmerl:export_simple_element
+					  (tuple 'open-hand '() (serialize-open-hand value)) 'xmerl_xml)) acc)))))
+	       (list)
+	       (public-information))) '()) 'xmerl_xml)))
+
+(defun serialize-game (player-number player-state)
+  (let* ((players (map-get player-state 'players))
+	 (serialized-players (clj:->> players (coll:tmap (serialize-player player-number)) (tuple_to_list)))
+	 (xml-players (xmerl:export_simple_element (tuple 'players '() serialized-players) 'xmerl_xml))
+	 (current-player (map-get player-state 'current-player)))
+    (xmerl:export_simple (list (tuple 'game (list (tuple 'you (erlang:integer_to_list player-number))
+					    (tuple 'current-player (erlang:integer_to_list current-player))
+					    (tuple 'players xml-players)) '())) 'xmerl_xml)))
+
 (defun available-actions (player-state)
   (lists:flatmap
     (lambda (f)
@@ -62,8 +101,8 @@
      (let ((visible-state (full-state->player-state state number)))
        ;; TODO: push this to the frontend via SSE
        (available-actions visible-state)
-       (! sse-pid (tuple 'ok visible-state)))
-     (player state number sse-pid))
+       (! sse-pid (tuple 'ok (tuple number visible-state)))
+     (player state number sse-pid)))
     (unknown
      (io:format "Unknown message: ~p\n" (list unknown))
      (player state number sse-pid))))
@@ -73,7 +112,7 @@
     (`#(ready ,another-player-number)
      (! sse-pid
        (tuple 'info
-         (io_lib:format "Player ~p is ready!\n" (list another-player-number))))
+         (io_lib:format "Player ~p is ready!" (list another-player-number))))
      (waiting-player number sse-pid))
     ('end (! sse-pid 'end))
     (`#(all-ready! ,initial-state)

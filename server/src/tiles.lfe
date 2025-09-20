@@ -12,6 +12,8 @@
 (defun dragon-colors ()
   (list 'red 'green 'white))
 
+(defun number? (tile) (lists:member (tile-suit tile) (numbered-suits)))
+
 (defun shuffle (tiles)
   (clj:->> tiles
     (lists:map (lambda (tile) (tuple (rand:uniform) tile)))
@@ -30,3 +32,12 @@
           (lc ((<- suit (numbered-suits))
                (<- number (lists:seq 1 9)))
             (record tile suit suit spec number)))))))
+
+(defun serialize-spec (tile spec)
+  (if (number? tile)
+    (erlang:integer_to_list spec)
+    spec))
+
+(defun serialize
+  (((= tile (tuple 'tile suit spec)))
+   (xmerl:export_simple_element (tuple 'tile (list (tuple 'suit suit) (tuple 'spec (serialize-spec tile spec))) '()) 'xmerl_xml)))
