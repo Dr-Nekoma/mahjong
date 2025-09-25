@@ -41,32 +41,56 @@
       'players players
       'you player-number)))
 
-(defun serialize-open-hand (list-melds)
+(defun serialize-single-open-hand (list-melds)
   (lists:map
    (lambda (t)
      (let (((tuple tag list-tiles) t))
        (xmerl:export_simple_element (tuple tag '() (lists:map (fun tiles:serialize 1) list-tiles)) 'xmerl_xml)))
    list-melds))
 
+(defun serialize-open-hand (list-melds)
+  (tuple 'open-hand
+	 (xmerl:export_simple_element
+	  (tuple 'open-hand '() (serialize-single-open-hand list-melds)) 'xmerl_xml)))
+
+(defun serialize-pile (tag pile)
+  (tuple tag
+	 (xmerl:export_simple_element
+	  (tuple tag '() (lists:map (fun tiles:serialize 1) pile)) 'xmerl_xml)))
+
+(defun yaku-han-entry->tuple
+  (((tuple yaku quantity))
+   (xmerl:export_simple_element (tuple yaku (list (tuple 'han quantity)) '()) 'xmerl_xml)))
+
+(defun serialize-yaku-han (yaku-han)
+  (xmerl:export_simple_element
+   (tuple 'yakus '() (clj:->> yaku-han (maps:to_list) (lists:map (fun yaku-han-entry->tuple 1)))) 'xmerl_xml))
+
+(defun serialize-full-player
+  (((map 'hand hand 'discard-pile discard-pile 'open-hand open-hand 'yaku-han yaku-han 'stick-deposit stick-deposit))
+     (tuple 'self
+	    (xmerl:export_simple_element
+	     (tuple 'self '() 		  
+		    (list
+		     (serialize-pile 'hand (coll:mset->list hand))
+		     (serialize-pile 'discard-pile discard-pile)
+		     (serialize-open-hand open-hand)
+		     (serialize-yaku-han yaku-han)
+		     (xmerl:export_simple_element (tuple 'stick-deposit (list (tuple 'quantity (erlang:integer_to_list stick-deposit))) '()) 'xmerl_xml)
+		     )) 'xmerl_xml))))
+
 (defun serialize-player (player-number)
   (lambda (player index)
     (xmerl:export_simple_element
      (tuple 'player
 	    (if (== index player-number)
-	      ;; TODO: Serialize full individual non-redacted player state
-	      (list)
+	      (list (serialize-full-player player))
 	      (lists:foldl
 	       (lambda (info acc)
 		 (let ((value (map-get player info)))
 		   (case info
-		     ('discard-pile (cons
-				     (tuple 'discard-pile
-					    (xmerl:export_simple_element
-					     (tuple 'discard-pile '() (lists:map (fun tiles:serialize 1) value)) 'xmerl_xml)) acc))
-		     ('open-hand (cons
-				  (tuple 'open-hand
-					 (xmerl:export_simple_element
-					  (tuple 'open-hand '() (serialize-open-hand value)) 'xmerl_xml)) acc)))))
+		     ('discard-pile (cons (serialize-pile 'discard-pile value) acc))
+		     ('open-hand (cons (serialize-open-hand value) acc)))))
 	       (list)
 	       (public-information))) '()) 'xmerl_xml)))
 
@@ -76,8 +100,8 @@
 	 (xml-players (xmerl:export_simple_element (tuple 'players '() serialized-players) 'xmerl_xml))
 	 (current-player (map-get player-state 'current-player)))
     (xmerl:export_simple (list (tuple 'game (list (tuple 'you (erlang:integer_to_list player-number))
-					    (tuple 'current-player (erlang:integer_to_list current-player))
-					    (tuple 'players xml-players)) '())) 'xmerl_xml)))
+						  (tuple 'current-player (erlang:integer_to_list current-player))
+						  (tuple 'players xml-players)) '())) 'xmerl_xml)))
 
 (defun available-actions (player-state)
   (lists:flatmap

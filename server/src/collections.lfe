@@ -7,6 +7,7 @@
    (mref-safe 2)
    (mset-count 2)
    (mset-add 2)
+   (mset->list 1)
    (mset-remove 2)
    (mset-minus 2)
    (mset-plus 2)
@@ -63,6 +64,19 @@
   (maps:merge_with (lambda (_ l r) (+ l r)) mset1 mset2))
 
 (defun mset-empty () (map))
+
+(defun key-value->list (pair)
+  (let* (((tuple tile quantity) pair))
+    (fletrec ((go (key acc counter)
+		  (if (== counter 0) acc (go key (cons key acc) (- counter 1)))))
+      (go tile (list) quantity))))
+
+(defun mset->list (mset)
+  (clj:->> mset
+	   (maps:to_list)
+	   (lists:map (fun key-value->list 1))
+	   (lists:flatten)
+	   (lists:sort)))
 
 (defmacro nlet
   (`(,label ,bindings . ,body)
