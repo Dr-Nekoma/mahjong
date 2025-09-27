@@ -5,10 +5,10 @@
 
 (defun init (req0 state)
   (let ((req (cowboy_req:stream_reply 200
-               (map #"content-type" #"text/event-stream")
+               (map #"content-type" #"text/event-stream" #"access-control-allow-origin" #"*")
                req0))
         ((map 'room room-pid) state))
-    (cowboy_req:cast (tuple 'set_options (map 'idle_timeout 600000
+    (cowboy_req:cast (tuple 'set_options (map 'idle_timeout 6000000
 					      'reset_idle_timeout_on_send 'true)) req0)
     (! room-pid (tuple 'connect (self)))
     (tuple 'cowboy_loop req state)))

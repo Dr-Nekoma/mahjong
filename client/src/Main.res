@@ -102,3 +102,8 @@ external alert: string => unit = "alert"
 //   })
 // )
 // ->Promise.done
+
+EventSource.new("http://localhost:4040/connect")->EventSource.setOnMessage(event => {
+  let parser = DOMParser.new()
+  Console.log(parser->DOMParser.parseFromString(event.data))
+})

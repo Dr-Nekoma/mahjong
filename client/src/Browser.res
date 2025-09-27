@@ -112,3 +112,29 @@ module Fetch = {
   @send
   external json: response => Promise.t<JSON.t> = "json"
 }
+
+module EventSource = {
+  type t
+
+  type event = {data: string}
+
+  @new
+  external new: string => t = "EventSource"
+
+  @set
+  external setOnMessage: (t, event => unit) => unit = "onmessage"
+}
+
+module XMLDocument = {
+  type t
+}
+
+module DOMParser = {
+  type t
+
+  @new
+  external new: unit => t = "DOMParser"
+
+  @send
+  external parseFromString: (t, string, @as("text/xml") _) => XMLDocument.t = "parseFromString"
+}

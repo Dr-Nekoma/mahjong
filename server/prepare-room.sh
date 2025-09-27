@@ -8,5 +8,5 @@ do
      -H "Connection: keep-alive" \
      http://localhost:4040/connect &
     sleep 1
-    curl -vH "Content-Type: application/xml" -d "<ready player-id=\"$i\"/>" http://localhost:4040
+    # curl -vH "Content-Type: application/xml" -d "<ready player-id=\"$i\"/>" http://localhost:4040
 done
