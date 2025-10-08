@@ -68,16 +68,16 @@
 
 (defun serialize-full-player
   (((map 'hand hand 'discard-pile discard-pile 'open-hand open-hand 'yaku-han yaku-han 'stick-deposit stick-deposit))
-     (tuple 'self
-            (xmerl:export_simple_element
-             (tuple 'self '()                   
-                    (list
-                     (serialize-pile 'hand (coll:mset->list hand))
-                     (serialize-pile 'discard-pile discard-pile)
-                     (serialize-open-hand open-hand)
-                     (serialize-yaku-han yaku-han)
-                     (xmerl:export_simple_element (tuple 'stick-deposit (list (tuple 'quantity (erlang:integer_to_list stick-deposit))) '()) 'xmerl_xml)
-                     )) 'xmerl_xml))))
+   (tuple 'self
+          (xmerl:export_simple_element
+           (tuple 'self '()
+                  (list
+                   (serialize-pile 'hand (coll:mset->list hand))
+                   (serialize-pile 'discard-pile discard-pile)
+                   (serialize-open-hand open-hand)
+                   (serialize-yaku-han yaku-han)
+                   (xmerl:export_simple_element (tuple 'stick-deposit (list (tuple 'quantity (erlang:integer_to_list stick-deposit))) '()) 'xmerl_xml)))
+           'xmerl_xml))))
 
 (defun serialize-player (player-number)
   (lambda (player index)
