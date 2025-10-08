@@ -18,9 +18,9 @@
 (defun one-element (serialized-element)
   (try
     (let ((node (clj:-> serialized-element
-                (unicode:characters_to_list 'utf8)
-                (xmerl_scan:string)
-                (tref 1))))
+                  (unicode:characters_to_list 'utf8)
+                  (xmerl_scan:string)
+                  (tref 1))))
       (case (xmerl_xs:select "name()" node)
         (`#(xmlObj string ,tag)
          (tuple (erlang:list_to_atom tag)
