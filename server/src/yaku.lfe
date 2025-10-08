@@ -71,36 +71,30 @@
                       'false
                       sorted-remaining))))
 
-(defmacro nlet
-  (`(,label ,bindings . ,body)
-   (when (is_atom label))
-   `(fletrec ((,label ,(lists:map (fun car 1) bindings) ,@body))
-      (,label ,@(lists:map (fun cadr 1) bindings)))))
-
 (defun call-riichi? (hand)
   (let ((sorted-tiles (lists:sort (maps:keys hand))))
-    (nlet recur ((partial-hands (cons hand (remove-pair hand))))
-          (if (== partial-hands '())
-            'false
-            (let (((cons partial-hand partial-hands) partial-hands))
-              (case (foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
-                ((tuple 'ok (map)) 'true)
-                ((tuple 'error remaining) (or (remaining-pair? remaining)
-                                              (remaining-triplet? remaining)
-                                              (remaining-sequence? remaining)
-                                              (recur partial-hands)))))))))
+    (prelude:nlet recur ((partial-hands (cons hand (remove-pair hand))))
+      (if (== partial-hands '())
+        'false
+        (let (((cons partial-hand partial-hands) partial-hands))
+          (case (foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
+            ((tuple 'ok (map)) 'true)
+            ((tuple 'error remaining) (or (remaining-pair? remaining)
+                                          (remaining-triplet? remaining)
+                                          (remaining-sequence? remaining)
+                                          (recur partial-hands)))))))))
 
 (defun full-flush? (hand) (clj:->> hand (maps:keys) (lists:map (fun tile-suit 1)) (sets:from_list) (sets:size) (== 1)))
 
 (defun riichi? (hand)
   (let ((sorted-tiles (lists:sort (maps:keys hand))))
-    (nlet recur ((partial-hands (remove-pair hand)))
-          (if (== partial-hands '())
-            'false
-            (let (((cons partial-hand partial-hands) partial-hands))
-              (case (foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
-                ((tuple 'ok (map)) 'true)
-                (_ (recur partial-hands))))))))
+    (prelude:nlet recur ((partial-hands (remove-pair hand)))
+      (if (== partial-hands '())
+        'false
+        (let (((cons partial-hand partial-hands) partial-hands))
+          (case (foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
+            ((tuple 'ok (map)) 'true)
+            (_ (recur partial-hands))))))))
 
 (defun count-pairs (hand)
   (maps:fold (lambda (tile count acc) (+ acc (div count 2))) 0 hand))

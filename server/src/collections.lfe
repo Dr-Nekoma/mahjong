@@ -78,14 +78,8 @@
            (lists:flatten)
            (lists:sort)))
 
-(defmacro nlet
-  (`(,label ,bindings . ,body)
-   (when (is_atom label))
-   `(fletrec ((,label ,(lists:map (fun car 1) bindings) ,@body))
-      (,label ,@(lists:map (fun cadr 1) bindings)))))
-
 (defun map-indexed (f l)
-  (nlet recur ((l l)
+  (prelude:nlet recur ((l l)
                        (index 1))
     (case l
       (`(,elem . ,tail) (cons (funcall f elem index)
