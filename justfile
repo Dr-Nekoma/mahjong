@@ -4,8 +4,8 @@ default:
 
 # Build client
 client:
-	npm run --prefix ./client/ res:build
+    npm run --prefix ./client/ res:build
 
 # Serve client
 serve: client
-	nix build && cd result/lib/node_modules/mahjong/ && npx serve dist
+    nix build && cd result/lib/node_modules/mahjong/ && npx serve dist

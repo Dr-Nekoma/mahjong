@@ -13,7 +13,7 @@
                                    args)))
              arg))
         (let ((current-player (coll:get-in arg '(state current-player)))
-	      (player (coll:get-in arg '(player))))
+              (player (coll:get-in arg '(player))))
           (if (== current-player player)
             (progn ,@body)
             (game:error state player ,error-msg)))))))
@@ -70,21 +70,21 @@
   "Cannot call riichi"
   (let* ((current-player-state (coll:get-in state (list 'players current-player)))
          ((map 'hand hand
-	       'yaku-han yaku-han
-	       'stick-deposit stick-deposit
-	       'open-hand open-hand)
-	  current-player-state)
-	 ;; TODO: Modify `yaku:call-riichi?` to check if hand has 14 tiles
-	 ;; If that is enforced, we don't need to check for the emptiness of the open hand
+               'yaku-han yaku-han
+               'stick-deposit stick-deposit
+               'open-hand open-hand)
+          current-player-state)
+         ;; TODO: Modify `yaku:call-riichi?` to check if hand has 14 tiles
+         ;; If that is enforced, we don't need to check for the emptiness of the open hand
          (can-call-riichi? (and (yaku:call-riichi? hand)
-			        (== 0 (maps:get 'riichi yaku-han 0))
-				(== (coll:get-in state open-hand)
-				    (list))))
-	 (next-yaku-han (map-set yaku-han 'riichi 1)))
+                                (== 0 (maps:get 'riichi yaku-han 0))
+                                (== (coll:get-in state open-hand)
+                                    (list))))
+         (next-yaku-han (map-set yaku-han 'riichi 1)))
     (if can-call-riichi?
       (game:loop (coll:update-in
-			   state
-			   (list 'players current-player)
-			   (map-set current-player-state
-				    'yaku-han next-yaku-han 'stick-deposit (+ stick-deposit 1000))))
+                           state
+                           (list 'players current-player)
+                           (map-set current-player-state
+                                    'yaku-han next-yaku-han 'stick-deposit (+ stick-deposit 1000))))
       (game:loop state))))

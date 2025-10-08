@@ -55,9 +55,9 @@
 
 (defun loop (next-state)
   (coll:tmap (lambda (player _)
-	       (let ((player-process (map-get player 'pid)))
-		 (! player-process (tuple 'new-state next-state))))
-	     (map-get next-state 'players))
+               (let ((player-process (map-get player 'pid)))
+                 (! player-process (tuple 'new-state next-state))))
+             (map-get next-state 'players))
   (clj:->> next-state
-	   (next-player)
-	   (decider)))
+           (next-player)
+           (decider)))

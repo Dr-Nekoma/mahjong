@@ -33,7 +33,7 @@
    (cond
     ((clj:map? mapp) (map-update mapp key (update-in (map-get mapp key) tail value)))
     ((and (erlang:is_list mapp)
-	  (erlang:is_integer key))
+          (erlang:is_integer key))
      (update-nth mapp key (lambda (x) (update-in x tail value))))
     (else (tset mapp key (update-in (tref mapp key) tail value))))))
 
@@ -68,15 +68,15 @@
 (defun key-value->list (pair)
   (let* (((tuple tile quantity) pair))
     (fletrec ((go (key acc counter)
-		  (if (== counter 0) acc (go key (cons key acc) (- counter 1)))))
+                  (if (== counter 0) acc (go key (cons key acc) (- counter 1)))))
       (go tile (list) quantity))))
 
 (defun mset->list (mset)
   (clj:->> mset
-	   (maps:to_list)
-	   (lists:map (fun key-value->list 1))
-	   (lists:flatten)
-	   (lists:sort)))
+           (maps:to_list)
+           (lists:map (fun key-value->list 1))
+           (lists:flatten)
+           (lists:sort)))
 
 (defmacro nlet
   (`(,label ,bindings . ,body)

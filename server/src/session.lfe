@@ -50,13 +50,13 @@
 
 (defun serialize-open-hand (list-melds)
   (tuple 'open-hand
-	 (xmerl:export_simple_element
-	  (tuple 'open-hand '() (serialize-single-open-hand list-melds)) 'xmerl_xml)))
+         (xmerl:export_simple_element
+          (tuple 'open-hand '() (serialize-single-open-hand list-melds)) 'xmerl_xml)))
 
 (defun serialize-pile (tag pile)
   (tuple tag
-	 (xmerl:export_simple_element
-	  (tuple tag '() (lists:map (fun tiles:serialize 1) pile)) 'xmerl_xml)))
+         (xmerl:export_simple_element
+          (tuple tag '() (lists:map (fun tiles:serialize 1) pile)) 'xmerl_xml)))
 
 (defun yaku-han-entry->tuple
   (((tuple yaku quantity))
@@ -69,39 +69,39 @@
 (defun serialize-full-player
   (((map 'hand hand 'discard-pile discard-pile 'open-hand open-hand 'yaku-han yaku-han 'stick-deposit stick-deposit))
      (tuple 'self
-	    (xmerl:export_simple_element
-	     (tuple 'self '() 		  
-		    (list
-		     (serialize-pile 'hand (coll:mset->list hand))
-		     (serialize-pile 'discard-pile discard-pile)
-		     (serialize-open-hand open-hand)
-		     (serialize-yaku-han yaku-han)
-		     (xmerl:export_simple_element (tuple 'stick-deposit (list (tuple 'quantity (erlang:integer_to_list stick-deposit))) '()) 'xmerl_xml)
-		     )) 'xmerl_xml))))
+            (xmerl:export_simple_element
+             (tuple 'self '()                   
+                    (list
+                     (serialize-pile 'hand (coll:mset->list hand))
+                     (serialize-pile 'discard-pile discard-pile)
+                     (serialize-open-hand open-hand)
+                     (serialize-yaku-han yaku-han)
+                     (xmerl:export_simple_element (tuple 'stick-deposit (list (tuple 'quantity (erlang:integer_to_list stick-deposit))) '()) 'xmerl_xml)
+                     )) 'xmerl_xml))))
 
 (defun serialize-player (player-number)
   (lambda (player index)
     (xmerl:export_simple_element
      (tuple 'player
-	    (if (== index player-number)
-	      (list (serialize-full-player player))
-	      (lists:foldl
-	       (lambda (info acc)
-		 (let ((value (map-get player info)))
-		   (case info
-		     ('discard-pile (cons (serialize-pile 'discard-pile value) acc))
-		     ('open-hand (cons (serialize-open-hand value) acc)))))
-	       (list)
-	       (public-information))) '()) 'xmerl_xml)))
+            (if (== index player-number)
+              (list (serialize-full-player player))
+              (lists:foldl
+               (lambda (info acc)
+                 (let ((value (map-get player info)))
+                   (case info
+                     ('discard-pile (cons (serialize-pile 'discard-pile value) acc))
+                     ('open-hand (cons (serialize-open-hand value) acc)))))
+               (list)
+               (public-information))) '()) 'xmerl_xml)))
 
 (defun serialize-game (player-number player-state)
   (let* ((players (map-get player-state 'players))
-	 (serialized-players (clj:->> players (coll:tmap (serialize-player player-number)) (tuple_to_list)))
-	 (xml-players (xmerl:export_simple_element (tuple 'players '() serialized-players) 'xmerl_xml))
-	 (current-player (map-get player-state 'current-player)))
+         (serialized-players (clj:->> players (coll:tmap (serialize-player player-number)) (tuple_to_list)))
+         (xml-players (xmerl:export_simple_element (tuple 'players '() serialized-players) 'xmerl_xml))
+         (current-player (map-get player-state 'current-player)))
     (xmerl:export_simple (list (tuple 'game (list (tuple 'you (erlang:integer_to_list player-number))
-						  (tuple 'current-player (erlang:integer_to_list current-player))
-						  (tuple 'players xml-players)) '())) 'xmerl_xml)))
+                                                  (tuple 'current-player (erlang:integer_to_list current-player))
+                                                  (tuple 'players xml-players)) '())) 'xmerl_xml)))
 
 (defun available-actions (player-state)
   (lists:flatmap
@@ -155,19 +155,19 @@
   (receive
     (`#(connect ,sse-pid)
      (let* ((players (map-get state 'players))
-	    (players-count (erlang:length players))
-	    (player-number (+ players-count 1)))
+            (players-count (erlang:length players))
+            (player-number (+ players-count 1)))
        (io:format "Somebody connected: ~p\n" (list player-number))
        (if (< players-count 4)
-	 (progn
-	   (! sse-pid `#(connected ,player-number))
-	   (room (coll:update-in state '(players)
-			 (cons (tuple player-number
-				      (spawn 'session 'waiting-player `(,player-number ,sse-pid))
-				      'false)  players))))
-	 (progn
-	   (! sse-pid `#(error "Cannot enter: room is full"))
-	   (room state)))))
+         (progn
+           (! sse-pid `#(connected ,player-number))
+           (room (coll:update-in state '(players)
+                         (cons (tuple player-number
+                                      (spawn 'session 'waiting-player `(,player-number ,sse-pid))
+                                      'false)  players))))
+         (progn
+           (! sse-pid `#(error "Cannot enter: room is full"))
+           (room state)))))
     (`#(ready ,http-id ,player-id)
      ;; TODO: There should be a check for connect before a ready is signaled
      ;; TODO: Check for 4 players
@@ -227,8 +227,8 @@
      (let* ((params (xml:play-action-params raw-params)))
         (io:format "Somebody wants to play: ~p\n~p\n" (list player-id params))
         (! (map-get state 'decider-id) params)
-	(! http-id 'ok)
-	(room state)))))
+        (! http-id 'ok)
+        (room state)))))
 
 (defun handler (req state)
   (let* ((room-pid (mref state 'room))
