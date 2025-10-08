@@ -3,19 +3,17 @@
   ;; app implementation
   (export
    (start 2)
-   (stop 1))
-  (import
-    (from game (play 1)))
-  )
+   (stop 1)))
 
 ;;; --------------------------
 ;;; application implementation
 ;;; --------------------------
 
 (defun start (_type _args)
-  "Start the application."
-  (let* ((game (spawn 'game 'play `(,(game:initial-game))))
-         (dispatch  (cowboy_router:compile `[#(_ [#(_ handler ,game)])]))
+  "start the application."
+  (let* ((room-pid (spawn 'session 'room (list (session:initial-room))))
+         (dispatch  (cowboy_router:compile `[#(_ [#("/" session ,(map 'room room-pid))
+                                                  #("/connect" connect ,(map 'room room-pid))])]))
          (`#(ok ,_) (cowboy:start_clear 'http '[#(port 4040)]
                       (map 'env (map 'dispatch dispatch)))))
     (server-sup:start_link)))
@@ -23,4 +21,3 @@
 (defun stop (_state)
   (server-sup:stop)
   'ok)
-

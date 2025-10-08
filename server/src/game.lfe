@@ -1,15 +1,23 @@
 (defmodule game
   (export
-   (play 1)
-   (initial-game 0)
+   (decider 1)
+   (initial-game 1)
+   (loop 1)
+   (error 3)
    (next-player 1))
-  (export-macro can-play? loop error))
+  (module-alias (collections coll)))
 
-(defun initial-player (hand)
+(defun initial-player (hand-list pid)
   (map
-    'hand hand
+    'hand (lists:foldl (lambda (tile hand)
+                         (coll:mset-add hand tile))
+                       (coll:mset-empty)
+                       hand-list)
+    'pid pid
     'discard-pile (list)
-    'open-hand (list)))
+    'open-hand (list)
+    'yaku-han (map)
+    'stick-deposit 0))
 
 (defun times
   ((0 f input) input)
@@ -20,40 +28,36 @@
    (let (((tuple hand remaining-wall) (lists:split 14 wall)))
      (tuple (cons hand hands) remaining-wall))))
 
-(defun initial-game ()
+(defun initial-game (players-pids)
   (let* (((tuple hands wall) (clj:->> (tiles:shuffle (tiles:initial-wall))
                                (tuple (list))
                                (times 4 (function split-hand 1)))))
     (map
       'current-player 1
       'wall wall
-      'players (list_to_tuple (lists:map (function initial-player 1) hands)))))
-
-(defmacro error (pid msg)
-  `(progn
-     (! ,pid #(error ,msg))
-     (game:play state)))
-
-(defun next-player (state)
-  (map-update state 'current-player (clj:-> state (map-get 'current-player) (+ 1) (rem 4))))
-
-(defmacro loop (pid next-state)
-  `(progn
-     (! ,pid (tuple 'success ,next-state))
-     (game:play (game:next-player ,next-state))))
-
-(defmacro can-play? (state player error-msg form)
-  `(let ((current-player (map-get ,state 'current-player)))
-     (if (== ,player current-player)
-       ,form
-       (game:error pid ,error-msg))))
+      'players (list_to_tuple (lists:zipwith (function initial-player 2) hands players-pids)))))
 
 ;; TODO: When discard we must calculate available pon, kan, chi for all the other players
 ;; to inform FE that they can click to make these moves
 ;; TODO: Have two separate processes one for auth another for the game
-(defun play (state)
-    (receive
-      ((tuple 'discard index player pid) (actions:discard state player index pid))
-      ((tuple 'draw player pid) (actions:draw state player pid))
-      ((tuple 'open-hand player pid) (actions:open-hand state player pid))
-      ((tuple 'open-hand player piece pid) state)))
+(defun decider (state)
+  (receive
+    ((tuple 'discard params) (actions:discard (map-set params 'state state)))
+    ((tuple 'draw params) (actions:draw (map-set params 'state state)))
+    ((tuple 'riichi params) (actions:riichi (map-set params 'state state)))))
+
+(defun error (state player msg)
+  (! (coll:get-in state `(players ,player pid)) (tuple 'error msg))
+  (decider state))
+
+(defun next-player (state)
+  (map-update state 'current-player (clj:-> state (map-get 'current-player) (+ 1) (rem 4))))
+
+(defun loop (next-state)
+  (coll:tmap (lambda (player _)
+               (let ((player-process (map-get player 'pid)))
+                 (! player-process (tuple 'new-state next-state))))
+             (map-get next-state 'players))
+  (clj:->> next-state
+           (next-player)
+           (decider)))

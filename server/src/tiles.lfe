@@ -1,7 +1,7 @@
 (defmodule tiles
   (export all))
 
-(defrecord tile suit spec)
+(include-lib "records.lfe")
 
 (defun numbered-suits ()
   (list 'bamboo 'circle 'character))
@@ -11,6 +11,8 @@
 
 (defun dragon-colors ()
   (list 'red 'green 'white))
+
+(defun number? (tile) (lists:member (tile-suit tile) (numbered-suits)))
 
 (defun shuffle (tiles)
   (clj:->> tiles
@@ -24,9 +26,18 @@
       (lists:merge
         (list
           (lc ((<- color (dragon-colors)))
-            (make-record tile suit 'dragon spec color))
+            (record tile suit 'dragon spec color))
           (lc ((<- direction (wind-directions)))
-            (make-record tile suit 'wind spec direction))
+            (record tile suit 'wind spec direction))
           (lc ((<- suit (numbered-suits))
                (<- number (lists:seq 1 9)))
-            (make-record tile suit suit spec number)))))))
+            (record tile suit suit spec number)))))))
+
+(defun serialize-spec (tile spec)
+  (if (number? tile)
+    (erlang:integer_to_list spec)
+    spec))
+
+(defun serialize
+  (((= tile (tuple 'tile suit spec)))
+   (xmerl:export_simple_element (tuple 'tile (list (tuple 'suit suit) (tuple 'spec (serialize-spec tile spec))) '()) 'xmerl_xml)))
