@@ -28,7 +28,7 @@
 
 (defun serialize
   (('play (tuple player-number gamestate))
-   (map 'data (session:serialize-game player-number gamestate)))
+   (map 'data (xml:write-game player-number gamestate)))
   ((event data)
    (clj:->> data (serialize-xml event) (map 'data))))
 

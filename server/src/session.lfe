@@ -4,9 +4,9 @@
     (init 2)
     (player 3)
     (waiting-player 2)
+    (public-information 0)
     (full-state->player-state 2)
     (available-actions 1)
-    (serialize-game 2)
     (room 1)
     (initial-room 0))
   (export (allowed_methods 2)
@@ -40,68 +40,6 @@
     (mset (maps:with '(current-player) state)
       'players players
       'you player-number)))
-
-(defun serialize-single-open-hand (list-melds)
-  (lists:map
-   (lambda (t)
-     (let (((tuple tag list-tiles) t))
-       (xmerl:export_simple_element (tuple tag '() (lists:map (fun tiles:serialize 1) list-tiles)) 'xmerl_xml)))
-   list-melds))
-
-(defun serialize-open-hand (list-melds)
-  (tuple 'open-hand
-         (xmerl:export_simple_element
-          (tuple 'open-hand '() (serialize-single-open-hand list-melds)) 'xmerl_xml)))
-
-(defun serialize-pile (tag pile)
-  (tuple tag
-         (xmerl:export_simple_element
-          (tuple tag '() (lists:map (fun tiles:serialize 1) pile)) 'xmerl_xml)))
-
-(defun yaku-han-entry->tuple
-  (((tuple yaku quantity))
-   (xmerl:export_simple_element (tuple yaku (list (tuple 'han quantity)) '()) 'xmerl_xml)))
-
-(defun serialize-yaku-han (yaku-han)
-  (xmerl:export_simple_element
-   (tuple 'yakus '() (clj:->> yaku-han (maps:to_list) (lists:map (fun yaku-han-entry->tuple 1)))) 'xmerl_xml))
-
-(defun serialize-full-player
-  (((map 'hand hand 'discard-pile discard-pile 'open-hand open-hand 'yaku-han yaku-han 'stick-deposit stick-deposit))
-   (tuple 'self
-          (xmerl:export_simple_element
-           (tuple 'self '()
-                  (list
-                   (serialize-pile 'hand (coll:mset->list hand))
-                   (serialize-pile 'discard-pile discard-pile)
-                   (serialize-open-hand open-hand)
-                   (serialize-yaku-han yaku-han)
-                   (xmerl:export_simple_element (tuple 'stick-deposit (list (tuple 'quantity (erlang:integer_to_list stick-deposit))) '()) 'xmerl_xml)))
-           'xmerl_xml))))
-
-(defun serialize-player (player-number)
-  (lambda (player index)
-    (xmerl:export_simple_element
-     (tuple 'player
-            (if (== index player-number)
-              (list (serialize-full-player player))
-              (lists:foldl
-               (lambda (info acc)
-                 (let ((value (map-get player info)))
-                   (case info
-                     ('discard-pile (cons (serialize-pile 'discard-pile value) acc))
-                     ('open-hand (cons (serialize-open-hand value) acc)))))
-               (list)
-               (public-information))) '()) 'xmerl_xml)))
-
-(defun serialize-game (player-number player-state)
-  (let* ((players (map-get player-state 'players))
-         (serialized-players (clj:->> players (coll:tmap (serialize-player player-number)) (tuple_to_list)))
-         (xml-players (xmerl:export_simple_element (tuple 'players '() serialized-players) 'xmerl_xml))
-         (current-player (map-get player-state 'current-player)))
-    (xmerl:export_simple (list (tuple 'game (list (tuple 'you (erlang:integer_to_list player-number))
-                                                  (tuple 'current-player (erlang:integer_to_list current-player))
-                                                  (tuple 'players xml-players)) '())) 'xmerl_xml)))
 
 (defun available-actions (player-state)
   (lists:flatmap
@@ -141,6 +79,7 @@
     ('end (! sse-pid 'end))
     (`#(all-ready! ,initial-state)
      (io:format "Everything set! Ready, go!\n" (list))
+     (! (self) `#(new-state ,initial-state))
      (player initial-state number sse-pid))))
 
 (defun initial-room ()
@@ -215,16 +154,16 @@
                 (decider-id (spawn 'game 'decider (list initial-game-state))))
            (lists:foreach (lambda (player)
                             (let ((waiting-player-process (tref player 2)))
-                              (! waiting-player-process `#(all-ready! initial-game-state))))
+                              (! waiting-player-process `#(all-ready! ,initial-game-state))))
                           (map-get state 'players))
            (io:format "This is the initial game: ~p\n" (list initial-game-state))
            (! http-id 'ok)
            (room (map-set state 'decider-id decider-id)))
          (! http-id `#(error "Either not all players are ready or someone started without being owner of the room")))))
-    (`#(play ,raw-params ,http-id ,player-id)
+    (`#(play ,action ,http-id ,player-id)
      ;; TODO: Same situation as ready with connected
      ;; Error handling on this for malicious intent
-     (let* ((params (xml:play-action-params raw-params)))
+     (let* ((params (xml:read-action-params action player-id)))
         (io:format "Somebody wants to play: ~p\n~p\n" (list player-id params))
         (! (map-get state 'decider-id) params)
         (! http-id 'ok)
@@ -234,25 +173,25 @@
   (let* ((room-pid (mref state 'room))
          (body (clj:-> (cowboy_req:read_body req)
                        (tref 2)
-                       (xml:one-element))))
+                       (xml:read-one-element))))
     (case body
-      (`#(terminate #m(player-id ,id))
+      (`#(terminate #m(player-id ,id) ())
        (! room-pid (tuple 'terminate (self) (list_to_integer id)))
        (receive
          ('ok `#(true ,req ,state))
          (`#(error ,_)
           ;; TODO: use the error message
           `#(false ,req ,state))))
-      (`#(ready #m(player-id ,id)) ; TODO: read ID from the cookie
+      (`#(ready #m(player-id ,id) ()) ; TODO: read ID from the cookie
        (! room-pid (tuple 'ready (self) (list_to_integer id)))
        (receive ('ok `#(true ,req ,state))))
-      (`#(start #m(player-id ,id)) ; TODO: read ID from the cookie
+      (`#(start #m(player-id ,id) ()) ; TODO: read ID from the cookie
        (! room-pid (tuple 'start (self) (list_to_integer id)))
        (receive
          ('ok `#(true ,req ,state))
          (`#(error ,msg)
           (io:format "Errored out: ~p\n" (list msg))
           `#(false ,req ,state))))
-      (`#(play ,(= raw-params `#m(player-id ,id)))
-       (! room-pid (tuple 'play raw-params (self) (list_to_integer id)))
+      (`#(play #m(player-id ,id) (,action))
+       (! room-pid (tuple 'play action (self) (list_to_integer id)))
        (receive ('ok `#(true ,req ,state)))))))

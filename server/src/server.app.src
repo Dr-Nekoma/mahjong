@@ -3,9 +3,9 @@
   {vsn,          "1"},
   {modules,      [
     'prelude',
-    'connect',
     'collections',
     'xml',
+    'connect',
     'tiles',
     'actions',
     'game',
