@@ -1,7 +1,8 @@
 (defmodule xml
   (export (read-one-element 1)
           (write-game 2)
-          (read-action-params 2))
+          (read-action-params 2)
+          (serialize-event 2))
   (module-alias (collections coll)))
 
 (defun read-action-params
@@ -15,7 +16,8 @@
   ((`#(draw #m() ()) player-id)
    (tuple 'draw (map 'player player-id)))
   ((`#(riichi #m() ()) player-id)
-   (tuple 'riichi (map 'player player-id))))
+   (tuple 'riichi (map 'player player-id)))
+  ((unknown _) (tuple 'error unknown)))
 
 (defun attributes (node)
   (lists:foldl
@@ -96,7 +98,7 @@
                      ('discard-pile (cons (convert-pile 'discard-pile value) acc))
                      ('open-hand (cons (convert-open-hand value) acc)))))
                (list)
-               (session:public-information))))))
+               (game:public-information))))))
 
 (defun write-game (player-number player-state)
   (let ((players (clj:->> 'players
@@ -108,3 +110,15 @@
                                       (list (tuple 'you (erlang:integer_to_list player-number))
                                             (tuple 'current-player (erlang:integer_to_list current-player)))
                                       (list (tuple 'players players)))) 'xmerl_xml)))
+
+(defun write-event (event mapp)
+  (clj:-> event
+          (tuple (maps:to_list mapp) '())
+          (list)
+          (xmerl:export_simple 'xmerl_xml)))
+
+(defun serialize-event
+  (('play (tuple player-number gamestate))
+   (map 'data (write-game player-number gamestate)))
+  ((event data)
+   (clj:->> data (write-event event) (map 'data))))
