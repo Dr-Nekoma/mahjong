@@ -15,6 +15,9 @@
    (map-indexed 2)
    (tmap 2)))
 
+(defun mref-safe (map key)
+  (try (tuple 'ok (mref map key)) (catch (_ #(error key)))))
+
 (defun get-in
   ((mapp '()) mapp)
   ((mapp (cons head tail))
@@ -31,7 +34,10 @@
   ((_ '() value) value)
   ((mapp (cons key tail) value)
    (cond
-    ((clj:map? mapp) (map-update mapp key (update-in (map-get mapp key) tail value)))
+    ((clj:map? mapp) (mset mapp key
+                           (case (mref-safe mapp key)
+                             ((tuple 'error _) (update-in (map) tail value))
+                             ((tuple 'ok found) (update-in found tail value)))))
     ((and (erlang:is_list mapp)
           (erlang:is_integer key))
      (update-nth mapp key (lambda (x) (update-in x tail value))))
@@ -76,6 +82,7 @@
            (maps:to_list)
            (lists:map (fun key-value->list 1))
            (lists:flatten)
+           ;; TODO: Review this sort, this can mess up the order of the tiles in FE
            (lists:sort)))
 
 (defun map-indexed (f l)
@@ -88,6 +95,3 @@
 
 (defun tmap (f t)
   (clj:->> t (tuple_to_list) (map-indexed f) (list_to_tuple)))
-
-(defun mref-safe (map key)
-  (try (tuple 'ok (mref map key)) (catch (_ #(error not-found)))))
