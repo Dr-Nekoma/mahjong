@@ -5,7 +5,7 @@
           (seven-pairs? 1))
   (module-alias (collections coll)))
 
-(include-lib "records.lfe")
+(include-lib "tile.lfe")
 
 (defun triplet? (hand tile) (=< 3 (coll:mset-count hand tile)))
 
@@ -35,14 +35,6 @@
       ((tiles:number? tile)
        (funcall check-done (coll:mset-minus partial-hand (get-sequence partial-hand tile))))
       ('true (funcall check-done partial-hand)))))
-
-(defun foldl-maybe
-  ([_ acc '()] (tuple 'ok acc))
-  ([f acc (cons head tail)]
-   (case (funcall f acc head)
-     (`#(ok ,value)
-      (foldl-maybe f value tail))
-     (`#(error ,value) (tuple 'error value)))))
 
 (defun remove-pair (hand)
   (clj:->> hand
@@ -77,7 +69,7 @@
       (if (== partial-hands '())
         'false
         (let (((cons partial-hand partial-hands) partial-hands))
-          (case (foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
+          (case (prelude:foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
             ((tuple 'ok (map)) 'true)
             ((tuple 'error remaining) (or (remaining-pair? remaining)
                                           (remaining-triplet? remaining)
@@ -92,7 +84,7 @@
       (if (== partial-hands '())
         'false
         (let (((cons partial-hand partial-hands) partial-hands))
-          (case (foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
+          (case (prelude:foldl-maybe (fun eliminate-tile 2) partial-hand sorted-tiles)
             ((tuple 'ok (map)) 'true)
             (_ (recur partial-hands))))))))
 
