@@ -1,19 +1,14 @@
 (defmodule server-app
   (behaviour application)
-  ;; app implementation
   (export
    (start 2)
    (stop 1)))
 
-;;; --------------------------
-;;; application implementation
-;;; --------------------------
-
 (defun start (_type _args)
   "start the application."
-  (let* ((room-pid (spawn 'session 'room (list (session:initial-room))))
-         (dispatch  (cowboy_router:compile `[#(_ [#("/" session ,(map 'room room-pid))
-                                                  #("/connect" connect ,(map 'room room-pid))])]))
+  (let* ((session-state (map 'room (spawn 'room 'run (list (room:initial)))))
+         (dispatch  (cowboy_router:compile `[#(_ [#("/" session ,session-state)
+                                                  #("/connect" sse ,session-state)])]))
          (`#(ok ,_) (cowboy:start_clear 'http '[#(port 4040)]
                       (map 'env (map 'dispatch dispatch)))))
     (server-sup:start_link)))
