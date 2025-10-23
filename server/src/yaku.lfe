@@ -2,7 +2,8 @@
   (export (riichi? 1)
           (call-riichi? 1)
           (full-flush? 1)
-          (seven-pairs? 1))
+          (seven-pairs? 1)
+          (get-sequence 2))
   (module-alias (collections coll)))
 
 (include-lib "tile.lfe")

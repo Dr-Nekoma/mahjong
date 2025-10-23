@@ -2,8 +2,12 @@
   (export
    (discard 1)
    (draw 1)
-   (riichi 1))
+   (riichi 1)
+   (chii-options 2)
+   (chii 1))
   (module-alias (collections coll)))
+
+(include-lib "tile.lfe")
 
 (defmacro defaction
   (`[,action-name ,args ,error-msg . ,body]
@@ -29,6 +33,7 @@
                              (coll:update-in current-pile (cons tile (coll:get-in state current-pile))))))
     (if (< tile-count 1)
       (game:error state player "Cannot discard chosen tile.")
+      ;; TODO: end turn
       (game:loop next-state))))
 
 ;; Definition 1. Closed Hand: when you have all your pieces in your hand (14)
@@ -38,6 +43,55 @@
 ;; Definition 2. Open Hand: when you have some pieces in your hand AND some pieces on the table
 ;; in order to form kan OR chi OR pon.
 
+(defun chii-options (hand previous-discard)
+  (if (tiles:number? previous-discard)
+    (let ((hand (coll:mset-add hand previous-discard))
+          (spec (tile-spec previous-discard))
+          (suit (tile-suit previous-discard)))
+      (clj:->> spec
+               (lists:seq (max (- spec 2) 1))
+               (lists:foldl
+                 (lambda (n acc)
+                   (let* ((tile (record tile suit suit spec n))
+                          (chii-option (coll:mset-normalize (yaku:get-sequence hand tile))))
+                     (if (== 0 (maps:size chii-option))
+                       acc
+                       (cons tile acc))))
+                 (list))))
+    (list)))
+
+(defaction chii (state player tiles)
+  "Cannot perform a chii."
+  (let* (((tuple tile1 tile2) tiles)
+         (current-hand (list 'players current-player 'hand))
+         (current-open-hand (list 'players current-player 'open-hand))
+         (previous-discard (list 'players
+                                 (game:previous-player current-player)
+                                 'discard-pile))
+         (hand (coll:get-in state current-hand))
+         (open-hand (coll:get-in state current-open-hand))
+         (discard (coll:get-in state previous-discard))
+         (meld (map tile1 1 tile2 1 (car discard) 1))
+         (next-state (clj:-> state
+                             (coll:update-in current-hand (coll:mset-minus (map tile1 1 tile2 1)))
+                             (coll:update-in current-open-hand (cons meld open-hand))
+                             (coll:update-in previous-discard (cdr discard)))))
+    (case (list (coll:mref-safe hand tile1)
+                (coll:mref-safe hand tile2))
+      (`(#(ok ,_) #(ok ,_))
+       (if (== (chii-options meld (car discard)) '())
+         (game:error state player "Invalid chii: not a sequence")
+         (game:loop next-state)))
+      (tile-checks
+       (game:error state player (map
+                                  'message "Invalid chii: tiles missing"
+                                  'children
+                                  (lists:flatmap
+                                    (lambda (candidate)
+                                      (case candidate
+                                        ((tuple 'ok _) (list))
+                                        ((tuple 'error tile) (list tile))))
+                                    tile-checks)))))))
 
 ;; (defun kan ())
 

@@ -3,32 +3,35 @@
    (decider 1)
    (initial-game 1)
    (loop 1)
+   (end-turn 1)
    (error 3)
    (public-information 0)
-   (full-state->player-state 2)
-   (next-player 1))
+   (full-state->player-state 2))
   (module-alias (collections coll)))
 
 (defun public-information ()
   '(discard-pile open-hand))
 
-(defun extract-if-self (player-number)
+(defun extract-if-self (state player-number)
   (lambda (player index)
     (if (== index player-number)
-      (mset player 'available-actions (available-actions player player-number))
+      (mset player 'available-actions (available-actions state player player-number))
       (maps:with (game:public-information) player))))
 
 (defun full-state->player-state (state player-number)
   (let ((players (coll:tmap
-                   (extract-if-self player-number)
+                   (extract-if-self state player-number)
                    (mref state 'players))))
     (mset (maps:with '(current-player) state)
       'players players
       'you player-number)))
 
+(defun state->previous-player (state player-number)
+  (coll:get-in state (list 'players (previous-player player-number))))
+
 ;; TODO: When discard we must calculate available pon, kan, chi for all the other players
 ;; to inform FE that they can click to make these moves.
-(defun available-actions (player player-number)
+(defun available-actions (state player player-number)
   (lists:flatmap
     (lambda (f)
       (funcall f player))
@@ -38,7 +41,16 @@
       (lambda (player)
         (if (yaku:call-riichi? (mref player 'hand))
           (list 'call-riichi)
-          (list))))))
+          (list)))
+      (lambda (player)
+        (lists:map
+          (lambda (tile) (tuple 'chii tile))
+          (actions:chii-options
+            (mref player 'hand)
+            (clj:-> state
+              (state->previous-player player-number)
+              (mref 'discard-pile)
+              (car))))))))
 
 (defun initial-player (hand-list pid)
   (map
@@ -71,6 +83,7 @@
 (defun decider (state)
   (receive
     ((tuple 'discard params) (actions:discard (map-set params 'state state)))
+    ((tuple 'chii params) (actions:chii (map-set params 'state state)))
     ((tuple 'draw params) (actions:draw (map-set params 'state state)))
     ((tuple 'riichi params) (actions:riichi (map-set params 'state state)))))
 
@@ -78,8 +91,11 @@
   (! (coll:get-in state `(players ,player pid)) (tuple 'error msg))
   (decider state))
 
-(defun next-player (state)
-  (map-update state 'current-player (clj:-> state (mref 'current-player) (+ 1) (rem 4))))
+(defun previous-player (player-number)
+  (clj:-> player-number (- 2) (rem 4) (+ 1)))
+
+(defun end-turn (state)
+  (map-update state 'current-player (clj:-> state (mref 'current-player) (rem 4) (+ 1))))
 
 (defun broadcast (state)
   (coll:tmap (lambda (player _)
@@ -87,8 +103,6 @@
                  (! player-process (tuple 'new-state state))))
              (mref state 'players)))
 
-(defun loop (next-state)
-  (broadcast next-state)
-  (clj:->> next-state
-           (next-player)
-           (decider)))
+(defun loop (state)
+  (broadcast state)
+  (decider state))

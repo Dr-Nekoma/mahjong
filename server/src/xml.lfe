@@ -5,16 +5,26 @@
           (serialize-event 2))
   (module-alias (collections coll)))
 
+(include-lib "tile.lfe")
+
+(defun read-tile (suit spec)
+  (record tile
+    suit (erlang:list_to_atom suit)
+    spec (if (lists:member suit (tiles:numbered-suits))
+           (erlang:list_to_integer spec)
+           (erlang:list_to_atom spec))))
+
 (defun read-action-params
   ((`#(discard #m(suit ,suit spec ,spec) ()) player-id)
-   (let* ((suit (erlang:list_to_atom suit))
-          (spec (if (lists:member suit (tiles:numbered-suits))
-                  (erlang:list_to_integer spec)
-                  (erlang:list_to_atom spec))))
-     (tuple 'discard (map 'tile (tuple 'tile suit spec)
-                          'player player-id))))
+   (tuple 'discard (map 'tile (read-tile suit spec)
+                        'player player-id)))
   ((`#(draw #m() ()) player-id)
    (tuple 'draw (map 'player player-id)))
+  ((`#(chii #m() (#(tile #m(suit ,suit1 spec ,spec1) ())
+                  #(tile #m(suit ,suit2 spec ,spec2) ()))) player-id)
+   (tuple 'chii (map 'player player-id
+                     'tiles (tuple (read-tile suit1 spec1)
+                                   (read-tile suit2 spec2)))))
   ((`#(riichi #m() ()) player-id)
    (tuple 'riichi (map 'player player-id)))
   ((unknown _) (tuple 'error unknown)))
@@ -122,10 +132,14 @@
                                       (list (tuple 'players players)))) 'xmerl_xml)))
 
 (defun write-event (event mapp)
-  (clj:-> event
-          (tuple (maps:to_list mapp) '())
-          (list)
-          (xmerl:export_simple 'xmerl_xml)))
+  (let ((children (case (coll:mref-safe mapp 'children)
+                    ((tuple 'ok children) children)
+                    (_ (list)))))
+    (clj:-> event
+            (tuple (maps:to_list (mrem mapp 'children))
+                   (lists:map (fun convert-tile 1) children))
+            (list)
+            (xmerl:export_simple 'xmerl_xml))))
 
 (defun serialize-event
   (('play (tuple player-number gamestate))
