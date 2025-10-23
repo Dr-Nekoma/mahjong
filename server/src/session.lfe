@@ -23,7 +23,6 @@
   (receive
     (`#(new-state ,state)
      (let ((visible-state (game:full-state->player-state state number)))
-       (game:available-actions visible-state)
        (! sse-pid (tuple 'ok (tuple number visible-state)))
        (player state number sse-pid)))
     (`#(info ,msg)
