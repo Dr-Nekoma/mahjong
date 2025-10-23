@@ -58,14 +58,14 @@
   (lists:map
    (lambda (t)
      (let (((tuple tag list-tiles) t))
-       (tuple tag '() (lists:map (fun convert-tile 1) list-tiles))))
+       (tuple tag (lists:map (fun convert-tile 1) list-tiles))))
    list-melds))
 
 (defun convert-open-hand (list-melds)
-  (tuple 'open-hand '() (convert-single-open-hand list-melds)))
+  (tuple 'open-hand (convert-single-open-hand list-melds)))
 
 (defun convert-pile (tag pile)
-  (tuple tag '() (lists:map (fun convert-tile 1) pile)))
+  (tuple tag (lists:map (fun convert-tile 1) pile)))
 
 (defun yaku-han-entry->tuple
   (((tuple yaku quantity))
@@ -77,9 +77,19 @@
                   (lists:map (fun yaku-han-entry->tuple 1)))
          '()))
 
+(defun convert-available-actions (actions)
+  (tuple 'available-actions (lists:map (lambda (action) (tuple action '())) actions)))
+
 (defun convert-full-player
-  (((map 'hand hand 'discard-pile discard-pile 'open-hand open-hand 'yaku-han yaku-han 'stick-deposit stick-deposit))
+  (((map
+      'available-actions available-actions
+      'hand hand
+      'discard-pile discard-pile
+      'open-hand open-hand
+      'yaku-han yaku-han
+      'stick-deposit stick-deposit))
    (list
+     (convert-available-actions available-actions)
      (convert-pile 'hand (coll:mset->list hand))
      (convert-pile 'discard-pile discard-pile)
      (convert-open-hand open-hand)

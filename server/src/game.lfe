@@ -6,7 +6,6 @@
    (error 3)
    (public-information 0)
    (full-state->player-state 2)
-   (available-actions 1)
    (next-player 1))
   (module-alias (collections coll)))
 
@@ -16,7 +15,7 @@
 (defun extract-if-self (player-number)
   (lambda (player index)
     (if (== index player-number)
-      player
+      (mset player 'available-actions (available-actions player player-number))
       (maps:with (game:public-information) player))))
 
 (defun full-state->player-state (state player-number)
@@ -29,17 +28,15 @@
 
 ;; TODO: When discard we must calculate available pon, kan, chi for all the other players
 ;; to inform FE that they can click to make these moves.
-(defun available-actions (player-state)
+(defun available-actions (player player-number)
   (lists:flatmap
     (lambda (f)
-      (funcall f player-state))
+      (funcall f player))
     (list
       ;; TODO: add more checks
       ;; TODO: abstract common pattern
-      (lambda (player-state)
-        (if (yaku:call-riichi?
-              (coll:get-in player-state
-              (list 'players (mref player-state 'you) 'hand)))
+      (lambda (player)
+        (if (yaku:call-riichi? (mref player 'hand))
           (list 'call-riichi)
           (list))))))
 
@@ -57,7 +54,7 @@
 
 (defun split-hand
   (((tuple hands wall))
-   (let (((tuple hand remaining-wall) (lists:split 14 wall)))
+   (let (((tuple hand remaining-wall) (lists:split 13 wall)))
      (tuple (cons hand hands) remaining-wall))))
 
 (defun initial-game (players-pids)

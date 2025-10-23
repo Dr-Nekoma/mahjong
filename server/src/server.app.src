@@ -4,6 +4,7 @@
   {modules,      [
     'prelude',
     'collections',
+    'hands',
     'xml',
     'room',
     'sse',
