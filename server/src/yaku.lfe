@@ -64,9 +64,15 @@
                       'false
                       sorted-remaining))))
 
+(defmacro nlet
+  (`(,label ,bindings . ,body)
+   (when (is_atom label))
+   `(fletrec ((,label ,(lists:map (fun car 1) bindings) ,@body))
+      (,label ,@(lists:map (fun cadr 1) bindings)))))
+
 (defun call-riichi? (hand)
   (let ((sorted-tiles (lists:sort (maps:keys hand))))
-    (prelude:nlet recur ((partial-hands (cons hand (remove-pair hand))))
+    (nlet recur ((partial-hands (cons hand (remove-pair hand))))
       (if (== partial-hands '())
         'false
         (let (((cons partial-hand partial-hands) partial-hands))
@@ -81,7 +87,7 @@
 
 (defun riichi? (hand)
   (let ((sorted-tiles (lists:sort (maps:keys hand))))
-    (prelude:nlet recur ((partial-hands (remove-pair hand)))
+    (nlet recur ((partial-hands (remove-pair hand)))
       (if (== partial-hands '())
         'false
         (let (((cons partial-hand partial-hands) partial-hands))
