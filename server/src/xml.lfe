@@ -8,11 +8,12 @@
 (include-lib "tile.lfe")
 
 (defun read-tile (suit spec)
-  (record tile
-    suit (erlang:list_to_atom suit)
-    spec (if (lists:member suit (tiles:numbered-suits))
-           (erlang:list_to_integer spec)
-           (erlang:list_to_atom spec))))
+  (let ((suit (erlang:list_to_atom suit)))
+    (record tile
+            suit suit
+            spec (if (lists:member suit (tiles:numbered-suits))
+                   (erlang:list_to_integer spec)
+                   (erlang:list_to_atom spec)))))
 
 (defun read-action-params
   ((`#(discard #m(suit ,suit spec ,spec) ()) player-id)
@@ -64,15 +65,13 @@
   (((= tile (tuple 'tile suit spec)))
    (tuple 'tile (list (tuple 'suit suit) (tuple 'spec (serialize-spec tile spec))) '())))
 
-(defun convert-single-open-hand (list-melds)
-  (lists:map
-   (lambda (t)
-     (let (((tuple tag list-tiles) t))
-       (tuple tag (lists:map (fun convert-tile 1) list-tiles))))
-   list-melds))
-
-(defun convert-open-hand (list-melds)
-  (tuple 'open-hand (convert-single-open-hand list-melds)))
+(defun convert-open-hand (map-list-melds)
+  (tuple 'open-hand
+         (maps:fold
+         (lambda (type+openness list-meld acc)
+           (lists:append (lists:map (lambda (meld) (tuple type+openness (lists:map (fun convert-tile 1) (coll:mset->list meld)))) list-meld) acc))
+         '()
+         map-list-melds)))
 
 (defun convert-pile (tag pile)
   (tuple tag (lists:map (fun convert-tile 1) pile)))
@@ -88,7 +87,10 @@
          '()))
 
 (defun convert-available-actions (actions)
-  (tuple 'available-actions (lists:map (lambda (action) (tuple action '())) actions)))
+  (tuple 'available-actions (lists:map (lambda (t)
+                                         (let ((action (tref t 1))
+                                               (tiles  (tref t (erlang:tuple_size t))))
+                                           (tuple action (lists:map (fun convert-tile 1) tiles)))) actions)))
 
 (defun convert-full-player
   (((map

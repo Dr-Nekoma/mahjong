@@ -19,8 +19,34 @@
         (let ((current-player (coll:get-in arg '(state current-player)))
               (player (coll:get-in arg '(player))))
           (if (== current-player player)
-            (progn ,@body)
+            ;; We are purposely making it opaque because the BEAM compiler is just too smart xD
+            (case (clj:identity (progn ,@body))
+              ((tuple 'ok next-state) (game:loop next-state))
+              ((tuple 'error payload) (game:error state player payload)))
             (game:error state player ,error-msg)))))))
+
+(defaction riichi (state player)
+  "Cannot call riichi"
+  (let* ((current-player-state (coll:get-in state (list 'players current-player)))
+         ((map 'hand hand
+               'yaku-han yaku-han
+               'stick-deposit stick-deposit
+               'open-hand open-hand)
+          current-player-state)
+         ;; TODO: Modify `yaku:call-riichi?` to check if hand has 14 tiles
+         ;; If that is enforced, we don't need to check for the emptiness of the open hand
+         (can-call-riichi? (and (yaku:call-riichi? hand)
+                                (== 0 (maps:get 'riichi yaku-han 0))
+                                (== (coll:get-in state open-hand)
+                                    (list))))
+         (next-yaku-han (map-set yaku-han 'riichi 1)))
+    (if can-call-riichi?
+      (tuple 'ok (coll:update-in
+                  state
+                  (list 'players current-player)
+                  (map-set current-player-state
+                           'yaku-han next-yaku-han 'stick-deposit (+ stick-deposit 1000))))
+      (tuple 'ok state))))
 
 (defaction discard (state player tile)
   "Cannot discard from your hand."
@@ -32,9 +58,8 @@
                              (coll:update-in current-hand (coll:mset-remove hand tile))
                              (coll:update-in current-pile (cons tile (coll:get-in state current-pile))))))
     (if (< tile-count 1)
-      (game:error state player "Cannot discard chosen tile.")
-      ;; TODO: end turn
-      (game:loop next-state))))
+      (tuple 'error "Cannot discard chosen tile.")
+      (tuple 'ok (game:end-turn next-state)))))
 
 ;; Definition 1. Closed Hand: when you have all your pieces in your hand (14)
   ;; Winning Conditions:
@@ -60,11 +85,16 @@
                  (list))))
     (list)))
 
+;; For pons we need the double map. For everything else, a list of (tuple tag mset) will suffice
+;; (map meld-type+openness
+;;      (lists-msets)
+;;      (map suit+spec lists-msets))
+
 (defaction chii (state player tiles)
   "Cannot perform a chii."
   (let* (((tuple tile1 tile2) tiles)
          (current-hand (list 'players current-player 'hand))
-         (current-open-hand (list 'players current-player 'open-hand))
+         (current-open-hand (list 'players current-player 'open-hand 'chii))
          (previous-discard (list 'players
                                  (game:previous-player current-player)
                                  'discard-pile))
@@ -73,25 +103,25 @@
          (discard (coll:get-in state previous-discard))
          (meld (map tile1 1 tile2 1 (car discard) 1))
          (next-state (clj:-> state
-                             (coll:update-in current-hand (coll:mset-minus (map tile1 1 tile2 1)))
+                             (coll:update-in current-hand (coll:mset-minus hand (map tile1 1 tile2 1)))
                              (coll:update-in current-open-hand (cons meld open-hand))
                              (coll:update-in previous-discard (cdr discard)))))
     (case (list (coll:mref-safe hand tile1)
                 (coll:mref-safe hand tile2))
       (`(#(ok ,_) #(ok ,_))
        (if (== (chii-options meld (car discard)) '())
-         (game:error state player "Invalid chii: not a sequence")
-         (game:loop next-state)))
+         (tuple 'error "Invalid chii: not a sequence")
+         (tuple 'ok next-state)))
       (tile-checks
-       (game:error state player (map
-                                  'message "Invalid chii: tiles missing"
-                                  'children
-                                  (lists:flatmap
-                                    (lambda (candidate)
-                                      (case candidate
-                                        ((tuple 'ok _) (list))
-                                        ((tuple 'error tile) (list tile))))
-                                    tile-checks)))))))
+       (tuple 'error (map
+                      'message "Invalid chii: tiles missing"
+                      'children
+                      (lists:flatmap
+                       (lambda (candidate)
+                         (case candidate
+                           ((tuple 'ok _) (list))
+                           ((tuple 'error tile) (list tile))))
+                       tile-checks)))))))
 
 ;; (defun kan ())
 
@@ -108,7 +138,7 @@
 
 ;;
 
-; open hand win conditions
+                                        ; open hand win conditions
 
 (defaction draw (state player)
   "Cannot draw"
@@ -118,27 +148,4 @@
          (next-state (clj:-> state
                              (coll:update-in current-hand (coll:mset-add hand next-tile))
                              (coll:update-in '(wall) wall))))
-    (game:loop next-state)))
-
-(defaction riichi (state player)
-  "Cannot call riichi"
-  (let* ((current-player-state (coll:get-in state (list 'players current-player)))
-         ((map 'hand hand
-               'yaku-han yaku-han
-               'stick-deposit stick-deposit
-               'open-hand open-hand)
-          current-player-state)
-         ;; TODO: Modify `yaku:call-riichi?` to check if hand has 14 tiles
-         ;; If that is enforced, we don't need to check for the emptiness of the open hand
-         (can-call-riichi? (and (yaku:call-riichi? hand)
-                                (== 0 (maps:get 'riichi yaku-han 0))
-                                (== (coll:get-in state open-hand)
-                                    (list))))
-         (next-yaku-han (map-set yaku-han 'riichi 1)))
-    (if can-call-riichi?
-      (game:loop (coll:update-in
-                           state
-                           (list 'players current-player)
-                           (map-set current-player-state
-                                    'yaku-han next-yaku-han 'stick-deposit (+ stick-deposit 1000))))
-      (game:loop state))))
+    (tuple 'ok next-state)))

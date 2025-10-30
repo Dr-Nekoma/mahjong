@@ -2,6 +2,7 @@
   (export
    (decider 1)
    (initial-game 1)
+   (previous-player 1)
    (loop 1)
    (end-turn 1)
    (error 3)
@@ -40,17 +41,20 @@
       ;; TODO: abstract common pattern
       (lambda (player)
         (if (yaku:call-riichi? (mref player 'hand))
-          (list 'call-riichi)
+          (list (tuple 'call-riichi '()))
           (list)))
       (lambda (player)
-        (lists:map
-          (lambda (tile) (tuple 'chii tile))
-          (actions:chii-options
-            (mref player 'hand)
-            (clj:-> state
-              (state->previous-player player-number)
-              (mref 'discard-pile)
-              (car))))))))
+        (case (clj:-> state
+                      (state->previous-player player-number)
+                      (coll:mref-safe 'discard-pile))
+          ((tuple 'ok (= discard-pile (cons _ _)))
+                   (let ((options (actions:chii-options
+                                   (mref player 'hand)
+                                   (car discard-pile))))
+                     (if (clj:empty? options)
+                       (list)
+                       (list (tuple 'chii options)))))
+          (_ (list)))))))
 
 (defun initial-player (hand-list pid)
   (map
@@ -60,7 +64,7 @@
                        hand-list)
     'pid pid
     'discard-pile (list)
-    'open-hand (list)
+    'open-hand (map 'chii '())
     'yaku-han (map)
     'stick-deposit 0))
 
@@ -71,14 +75,14 @@
 
 (defun initial-game (players-pids)
   (let* (((tuple hands wall) (clj:->> (tiles:initial-wall)
-                                      (tiles:shuffle )
+                                      (tiles:shuffle)
                                       (tuple (list))
                                       (prelude:times 4 (function split-hand 1))))
           (players (clj:->> players-pids (lists:zipwith (function initial-player 2) hands) (list_to_tuple))))
     (map
       'current-player 1
       'wall wall
-      'players players)))
+      'players (coll:tmap (lambda (player _) (coll:update-in player '(hand) (hands:seven-pairs))) players))))
 
 (defun decider (state)
   (receive
@@ -92,7 +96,7 @@
   (decider state))
 
 (defun previous-player (player-number)
-  (clj:-> player-number (- 2) (rem 4) (+ 1)))
+  (mref (map 1 4 2 1 3 2 4 3) player-number))
 
 (defun end-turn (state)
   (map-update state 'current-player (clj:-> state (mref 'current-player) (rem 4) (+ 1))))
