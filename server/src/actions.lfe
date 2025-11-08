@@ -4,10 +4,16 @@
    (draw 1)
    (riichi 1)
    (chii-options 2)
-   (chii 1))
+   (chii 1)
+   (pon 1))
   (module-alias (collections coll)))
 
 (include-lib "tile.lfe")
+
+(defun async-action? (action-name)
+  (or (== 'kan action-name)
+      (== 'pon action-name)
+      (== 'ron action-name)))
 
 (defmacro defaction
   (`[,action-name ,args ,error-msg . ,body]
@@ -18,7 +24,8 @@
              arg))
         (let ((current-player (coll:get-in arg '(state current-player)))
               (player (coll:get-in arg '(player))))
-          (if (== current-player player)
+          (if (or (== current-player player)
+                  (async-action? ',action-name))
             ;; We are purposely making it opaque because the BEAM compiler is just too smart xD
             (case (clj:identity (progn ,@body))
               ((tuple 'ok next-state) (game:loop next-state))
@@ -85,27 +92,38 @@
                  (list))))
     (list)))
 
-;; For pons we need the double map. For everything else, a list of (tuple tag mset) will suffice
-;; (map meld-type+openness
-;;      (lists-msets)
-;;      (map suit+spec lists-msets))
-
-(defaction chii (state player tiles)
-  "Cannot perform a chii."
+(defun meld-action (action-name current-player state player tiles)
   (let* (((tuple tile1 tile2) tiles)
          (current-hand (list 'players current-player 'hand))
-         (current-open-hand (list 'players current-player 'open-hand 'chii))
+         (current-open-hand (list 'players current-player 'open-hand action-name))
          (previous-discard (list 'players
                                  (game:previous-player current-player)
                                  'discard-pile))
          (hand (coll:get-in state current-hand))
          (open-hand (coll:get-in state current-open-hand))
          (discard (coll:get-in state previous-discard))
-         (meld (map tile1 1 tile2 1 (car discard) 1))
+         (meld (lists:foldl
+                 (fun coll:mset-plus 2)
+                 (map)
+                 (list (map tile1 1)
+                       (map tile2 1)
+                       (map (car discard) 1))))
          (next-state (clj:-> state
                              (coll:update-in current-hand (coll:mset-minus hand (map tile1 1 tile2 1)))
                              (coll:update-in current-open-hand (cons meld open-hand))
                              (coll:update-in previous-discard (cdr discard)))))
+    (map 'next-state next-state
+         'discard discard
+         'hand hand
+         'meld meld)))
+
+(defaction chii (state player tiles)
+  "Cannot perform a chii."
+  (let (((tuple tile1 tile2) tiles)
+        ((map 'next-state next-state
+              'discard discard
+              'hand hand
+              'meld meld) (meld-action 'chii current-player state player tiles)))
     (case (list (coll:mref-safe hand tile1)
                 (coll:mref-safe hand tile2))
       (`(#(ok ,_) #(ok ,_))
@@ -123,11 +141,24 @@
                            ((tuple 'error tile) (list tile))))
                        tile-checks)))))))
 
+(defaction pon (state player tiles)
+  "Cannot perform a pon."
+  (let* (((tuple tile1 tile2) tiles)
+         ((map 'next-state next-state
+               'discard discard
+               'hand hand
+               'meld meld) (meld-action 'pon current-player state player tiles))
+         (discarded-tile (car discard)))
+    ;; TODO: deal with red tiles
+    (case (coll:mref-safe hand tile1)
+      (`#(ok ,n) (when (=< 2 n) (== tile1 tile2) (== tile1 discarded-tile))
+       (tuple 'ok (mset next-state 'current-player player))
+      (_
+       (tuple 'error (map
+                      'message "Invalid pon: wrong tiles"
+                      'children (list tile1 tile2 discarded-tile)))))))
+
 ;; (defun kan ())
-
-;; (defun chi ())
-
-;; (defun pon ())
 
 ;; closed hand win conditions
 ;; every set must be a flush

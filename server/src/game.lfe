@@ -38,6 +38,7 @@
       (funcall f player))
     (list
       ;; TODO: add more checks
+      ;; TODO: check for discard
       ;; TODO: abstract common pattern
       (lambda (player)
         (if (yaku:call-riichi? (mref player 'hand))
@@ -54,6 +55,16 @@
                      (if (clj:empty? options)
                        (list)
                        (list (tuple 'chii options)))))
+          (_ (list))))
+     (lambda (player)
+        (case (clj:-> state
+                      (state->previous-player player-number)
+                      (coll:mref-safe 'discard-pile))
+          ((tuple 'ok (= discard-pile (cons last-discard _)))
+           (case (clj:-> player (mref 'hand) (coll:mref-safe last-discard))
+             (`#(ok ,n) (when (=< 2 n))
+              (list (tuple 'pon (list last-discard last-discard))))
+             (_ (list))))
           (_ (list)))))))
 
 (defun initial-player (hand-list pid)
@@ -64,7 +75,7 @@
                        hand-list)
     'pid pid
     'discard-pile (list)
-    'open-hand (map 'chii '())
+    'open-hand (map 'chii '() 'pon '())
     'yaku-han (map)
     'stick-deposit 0))
 
@@ -88,6 +99,7 @@
   (receive
     ((tuple 'discard params) (actions:discard (map-set params 'state state)))
     ((tuple 'chii params) (actions:chii (map-set params 'state state)))
+    ((tuple 'pon params) (actions:pon (map-set params 'state state)))
     ((tuple 'draw params) (actions:draw (map-set params 'state state)))
     ((tuple 'riichi params) (actions:riichi (map-set params 'state state)))))
 

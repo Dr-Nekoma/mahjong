@@ -26,6 +26,11 @@
    (tuple 'chii (map 'player player-id
                      'tiles (tuple (read-tile suit1 spec1)
                                    (read-tile suit2 spec2)))))
+  ((`#(pon #m() (#(tile #m(suit ,suit1 spec ,spec1) ())
+                  #(tile #m(suit ,suit2 spec ,spec2) ()))) player-id)
+   (tuple 'pon (map 'player player-id
+                     'tiles (tuple (read-tile suit1 spec1)
+                                   (read-tile suit2 spec2)))))
   ((`#(riichi #m() ()) player-id)
    (tuple 'riichi (map 'player player-id)))
   ((unknown _) (tuple 'error unknown)))
