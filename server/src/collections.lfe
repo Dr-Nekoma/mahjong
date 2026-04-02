@@ -12,6 +12,7 @@
    (mset-minus 2)
    (mset-plus 2)
    (mset-empty 0)
+   (mset-normalize 1)
    (map-indexed 2)
    (tmap 2)))
 
@@ -61,10 +62,14 @@
       (map-remove mset value)
       (map-set mset value (- count 1)))))
 
+(defun mset-normalize (mset)
+  (maps:filter (lambda (_ n) (and (is_number n) (< 0 n)))
+               mset))
+
 (defun mset-minus (mset1 mset2)
   (clj:->>
     (maps:merge_with (lambda (_ l r) (- l r)) mset1 mset2)
-    (maps:filter (lambda (_ v) (< 0 v)))))
+    (mset-normalize)))
 
 (defun mset-plus (mset1 mset2)
   (maps:merge_with (lambda (_ l r) (+ l r)) mset1 mset2))
@@ -85,8 +90,14 @@
            ;; TODO: Review this sort, this can mess up the order of the tiles in FE
            (lists:sort)))
 
+(defmacro nlet
+  (`(,label ,bindings . ,body)
+   (when (is_atom label))
+   `(fletrec ((,label ,(lists:map (fun car 1) bindings) ,@body))
+      (,label ,@(lists:map (fun cadr 1) bindings)))))
+
 (defun map-indexed (f l)
-  (prelude:nlet recur ((l l)
+  (nlet recur ((l l)
                        (index 1))
     (case l
       (`(,elem . ,tail) (cons (funcall f elem index)

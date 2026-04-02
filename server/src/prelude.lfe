@@ -1,9 +1,10 @@
 (defmodule prelude
+  (export-macro nlet)
   (export
    (times 3)
-   (foldl-maybe 3))
-  (export-macro nlet))
+   (foldl-maybe 3)))
 
+;; TODO: Figure out why we can't reuse this macro in other modules
 (defmacro nlet
   (`(,label ,bindings . ,body)
    (when (is_atom label))

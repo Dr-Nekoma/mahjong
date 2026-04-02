@@ -45,7 +45,7 @@
      (! sse-pid (tuple 'info msg))
      (waiting-player number sse-pid))
     (`#(all-ready! ,initial-state)
-     (io:format "Everything set! Ready, go!\n" (list))
+     (io:format "Everything set! Ready, steady, go!\n" (list))
      (! (self) `#(new-state ,initial-state))
      (player initial-state number sse-pid))))
 
